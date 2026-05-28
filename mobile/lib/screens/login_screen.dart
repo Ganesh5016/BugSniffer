@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -6,11 +8,13 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
-  final _emailCtrl = TextEditingController(text: 'demo@bugsniffer.io');
-  final _passCtrl = TextEditingController(text: 'demo1234');
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
   bool _loading = false;
   bool _obscurePass = true;
+  String? _errorMessage;
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
 
@@ -31,10 +35,36 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Future<void> _login() async {
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/dashboard');
+    if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
+      setState(() => _errorMessage = 'Please enter email and password');
+      return;
+    }
+    
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+    
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
+      );
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _errorMessage = e.message ?? 'An error occurred during login';
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -123,6 +153,19 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
                         const SizedBox(height: 24),
 
+                        if (_errorMessage != null)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: 24),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF4444).withOpacity(0.1),
+                              border: Border.all(color: const Color(0xFFFF4444).withOpacity(0.5)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(_errorMessage!, style: const TextStyle(color: Color(0xFFFF4444), fontSize: 13)),
+                          ),
+
                         // Email field
                         _buildLabel('EMAIL ADDRESS'),
                         const SizedBox(height: 6),
@@ -188,38 +231,25 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           width: double.infinity,
                           height: 48,
                           child: OutlinedButton(
-                            onPressed: _login,
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupScreen()));
+                            },
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Color(0xFF1E3A5F)),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              foregroundColor: const Color(0xFF94A3B8),
+                              foregroundColor: const Color(0xFF00FF88),
                             ),
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text('🌐', style: TextStyle(fontSize: 16)),
+                                Icon(Icons.person_add, size: 18),
                                 SizedBox(width: 8),
-                                Text('Continue with Google', style: TextStyle(fontSize: 14)),
+                                Text('Create New Account', style: TextStyle(fontSize: 14)),
                               ],
                             ),
                           ),
                         ),
                       ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFF1E3A5F).withOpacity(0.5)),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'Demo: All features work without API keys',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF00FF88)),
-                      ),
                     ),
                   ),
                 ],

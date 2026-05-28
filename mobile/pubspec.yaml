@@ -23,6 +23,15 @@ dependencies:
   # Utils
   shared_preferences: ^2.2.2
   intl: ^0.18.1
+  
+  # Firebase Auth
+  firebase_core: ^3.1.1
+  firebase_auth: ^5.1.1
+  
+  # Real Device Metrics
+  device_info_plus: ^10.1.0
+  battery_plus: ^6.0.0
+  network_info_plus: ^5.0.3
 
 dev_dependencies:
   flutter_test:
