@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "675043099562",
+    "project_id": "bugsniffer-51157",
+    "storage_bucket": "bugsniffer-51157.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:675043099562:android:0dfe55cc4516b9296261d3",
+        "android_client_info": {
+          "package_name": "com.bug.sniffer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKkilbVzZXlJ87skcNiGyuwu93jKXQtAI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

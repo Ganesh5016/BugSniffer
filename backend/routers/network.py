@@ -1,0 +1,245 @@
+"""Network Security Monitor API endpoints"""
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional
+import httpx
+import os
+import random
+from datetime import datetime, timedelta
+
+router = APIRouter()
+
+ABUSEIPDB_KEY = os.environ.get("ABUSEIPDB_API_KEY", "")
+GOOGLE_SAFE_BROWSING_KEY = os.environ.get("GOOGLE_SAFE_BROWSING_API_KEY", "")
+ABUSEIPDB_BASE = "https://api.abuseipdb.com/api/v2"
+
+
+class IPCheckRequest(BaseModel):
+    ip_address: str
+
+
+class URLCheckRequest(BaseModel):
+    url: str
+
+
+class NetworkScanRequest(BaseModel):
+    device_id: str
+    connections: List[dict]
+
+
+async def check_ip_reputation(ip: str) -> dict:
+    """Check IP reputation via AbuseIPDB"""
+    if not ABUSEIPDB_KEY:
+        return _simulate_ip_check(ip)
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(
+                f"{ABUSEIPDB_BASE}/check",
+                params={"ipAddress": ip, "maxAgeInDays": 90},
+                headers={"Key": ABUSEIPDB_KEY, "Accept": "application/json"},
+                timeout=10.0
+            )
+            if response.status_code == 200:
+                data = response.json().get("data", {})
+                return {
+                    "ip": ip,
+                    "is_malicious": data.get("abuseConfidenceScore", 0) > 50,
+                    "abuse_score": data.get("abuseConfidenceScore", 0),
+                    "country": data.get("countryCode", "Unknown"),
+                    "isp": data.get("isp", "Unknown"),
+                    "total_reports": data.get("totalReports", 0),
+                    "last_reported": data.get("lastReportedAt", "Never"),
+                    "source": "AbuseIPDB"
+                }
+        except Exception as e:
+            print(f"AbuseIPDB error: {e}")
+    
+    return _simulate_ip_check(ip)
+
+
+def _simulate_ip_check(ip: str) -> dict:
+    """Simulate IP reputation check"""
+    # Make deterministic based on IP
+    random.seed(hash(ip) % 10000)
+    score = random.randint(0, 100)
+    countries = ["US", "RU", "CN", "DE", "FR", "NL", "BR", "IN", "JP"]
+    isps = [
+        "Amazon AWS", "Google Cloud", "Cloudflare",
+        "DigitalOcean", "OVH", "Hetzner", "Unknown ISP"
+    ]
+    return {
+        "ip": ip,
+        "is_malicious": score > 70,
+        "abuse_score": score,
+        "country": random.choice(countries),
+        "isp": random.choice(isps),
+        "total_reports": random.randint(0, 500) if score > 50 else 0,
+        "last_reported": (datetime.utcnow() - timedelta(days=random.randint(1, 30))).isoformat() if score > 50 else None,
+        "source": "Demo Mode - Add ABUSEIPDB_API_KEY for real data"
+    }
+
+
+async def check_url_safety(url: str) -> dict:
+    """Check URL safety via Google Safe Browsing"""
+    if not GOOGLE_SAFE_BROWSING_KEY:
+        return _simulate_url_check(url)
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            payload = {
+                "client": {"clientId": "bugsniffer", "clientVersion": "1.0.0"},
+                "threatInfo": {
+                    "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
+                    "platformTypes": ["ANY_PLATFORM"],
+                    "threatEntryTypes": ["URL"],
+                    "threatEntries": [{"url": url}]
+                }
+            }
+            response = await client.post(
+                f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={GOOGLE_SAFE_BROWSING_KEY}",
+                json=payload,
+                timeout=10.0
+            )
+            if response.status_code == 200:
+                matches = response.json().get("matches", [])
+                is_dangerous = len(matches) > 0
+                return {
+                    "url": url,
+                    "is_safe": not is_dangerous,
+                    "threats": [m.get("threatType") for m in matches],
+                    "platform_type": matches[0].get("platformType") if matches else None,
+                    "source": "Google Safe Browsing"
+                }
+        except Exception as e:
+            print(f"Safe Browsing error: {e}")
+    
+    return _simulate_url_check(url)
+
+
+def _simulate_url_check(url: str) -> dict:
+    """Simulate URL safety check"""
+    suspicious_keywords = ["phish", "bank-secure", "login-verify", "paypal-", "amazon-"]
+    is_suspicious = any(kw in url.lower() for kw in suspicious_keywords)
+    
+    threats = []
+    if is_suspicious:
+        threats = ["SOCIAL_ENGINEERING"]
+    
+    return {
+        "url": url,
+        "is_safe": not is_suspicious,
+        "threats": threats,
+        "platform_type": "ANY_PLATFORM" if threats else None,
+        "source": "Demo Mode - Add GOOGLE_SAFE_BROWSING_API_KEY for real data"
+    }
+
+
+@router.post("/check-ip")
+async def check_ip(request: IPCheckRequest):
+    """Check IP address reputation"""
+    return await check_ip_reputation(request.ip_address)
+
+
+@router.post("/check-url")
+async def check_url(request: URLCheckRequest):
+    """Check URL for phishing/malware"""
+    return await check_url_safety(request.url)
+
+
+@router.get("/active-connections")
+async def get_active_connections(device_id: str = "demo"):
+    """Get active network connections"""
+    connections = []
+    
+    safe_ips = [
+        ("142.250.185.78", "Google", "US", 5),
+        ("104.244.42.65", "Twitter/X", "US", 10),
+        ("157.240.2.35", "Facebook", "IE", 20),
+        ("151.101.1.164", "Fastly CDN", "US", 8),
+        ("13.226.108.65", "Amazon CloudFront", "US", 3),
+    ]
+    
+    suspicious_ips = [
+        ("185.220.101.47", "Unknown VPN", "RU", 85),
+        ("103.251.167.10", "Suspicious Host", "CN", 72),
+    ]
+    
+    all_ips = safe_ips + (suspicious_ips if random.random() > 0.5 else [])
+    
+    for ip, service, country, risk in all_ips:
+        connections.append({
+            "remote_ip": ip,
+            "remote_port": random.choice([80, 443, 8080, 3000]),
+            "local_port": random.randint(40000, 65000),
+            "service": service,
+            "country": country,
+            "risk_score": risk,
+            "protocol": "TCP",
+            "state": "ESTABLISHED",
+            "bytes_sent": random.randint(1000, 100000),
+            "bytes_recv": random.randint(5000, 500000),
+            "is_suspicious": risk > 60
+        })
+    
+    return {
+        "connections": connections,
+        "total": len(connections),
+        "suspicious_count": sum(1 for c in connections if c["is_suspicious"]),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
+@router.get("/traffic-stats")
+async def get_traffic_stats():
+    """Get network traffic statistics"""
+    now = datetime.utcnow()
+    
+    traffic_data = []
+    for i in range(24):
+        hour = now - timedelta(hours=23-i)
+        traffic_data.append({
+            "time": hour.strftime("%H:00"),
+            "upload": random.randint(100, 5000),
+            "download": random.randint(500, 20000),
+            "threats": random.randint(0, 3)
+        })
+    
+    return {
+        "traffic_24h": traffic_data,
+        "total_upload_mb": round(random.uniform(50, 500), 2),
+        "total_download_mb": round(random.uniform(200, 2000), 2),
+        "blocked_connections": random.randint(5, 50),
+        "safe_connections": random.randint(50, 200),
+        "dns_queries": random.randint(100, 1000),
+        "suspicious_dns": random.randint(0, 5)
+    }
+
+
+@router.get("/dns-requests")
+async def get_dns_requests():
+    """Get recent DNS requests"""
+    domains = [
+        ("google.com", False, "Search"),
+        ("facebook.com", False, "Social"),
+        ("malicious-tracker.ru", True, "Tracker"),
+        ("phishing-bank.com", True, "Phishing"),
+        ("cloudflare.com", False, "CDN"),
+        ("analytics.suspicious.io", True, "Analytics"),
+        ("github.com", False, "Dev"),
+        ("api.whatsapp.com", False, "Messaging"),
+    ]
+    
+    return {
+        "requests": [
+            {
+                "domain": domain,
+                "is_suspicious": susp,
+                "category": cat,
+                "timestamp": (datetime.utcnow() - timedelta(minutes=random.randint(0, 60))).isoformat(),
+                "count": random.randint(1, 20)
+            }
+            for domain, susp, cat in domains
+        ]
+    }

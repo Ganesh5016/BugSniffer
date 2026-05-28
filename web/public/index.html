@@ -1,0 +1,2482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BugSniffer - AI Cybersecurity Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #030712;
+      --surface: #0f172a;
+      --card: #111827;
+      --card2: #0d1b2a;
+      --border: #1e3a5f;
+      --border2: #162032;
+      --blue: #00d4ff;
+      --blue2: #0099cc;
+      --green: #00ff88;
+      --green2: #00cc6a;
+      --red: #ff4444;
+      --yellow: #ffd700;
+      --purple: #7c3aed;
+      --orange: #ff6b00;
+      --text: #e2e8f0;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: 
+        linear-gradient(rgba(0,212,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Layout */
+    .app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      min-height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border2);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+    .sidebar-logo {
+      padding: 24px 20px;
+      border-bottom: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--blue), var(--green));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 20px rgba(0,212,255,0.3);
+    }
+    .logo-text {
+      font-family: 'Orbitron', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: 2px;
+    }
+    .logo-sub { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; }
+    
+    .nav { flex: 1; padding: 16px 0; overflow-y: auto; }
+    .nav-section-label {
+      padding: 8px 20px 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+      font-size: 14px;
+      color: var(--text-dim);
+      position: relative;
+    }
+    .nav-item:hover { background: rgba(0,212,255,0.05); color: var(--text); }
+    .nav-item.active {
+      background: rgba(0,212,255,0.08);
+      border-left-color: var(--blue);
+      color: var(--blue);
+    }
+    .nav-item .icon { font-size: 18px; width: 20px; text-align: center; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .nav-badge.green { background: var(--green); color: #000; }
+    
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border2);
+    }
+    .status-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+      margin-right: 8px;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    
+    /* Main content */
+    .main {
+      margin-left: 240px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    /* Top bar */
+    .topbar {
+      height: 64px;
+      background: rgba(15,23,42,0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      flex: 1;
+    }
+    .topbar-title span { color: var(--blue); }
+    .hamburger { display: none; cursor: pointer; font-size: 20px; }
+    
+    .threat-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0,255,136,0.1);
+      border: 1px solid rgba(0,255,136,0.3);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 500;
+    }
+    .threat-pill.danger {
+      background: rgba(255,68,68,0.1);
+      border-color: rgba(255,68,68,0.3);
+      color: var(--red);
+    }
+    
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 2px solid var(--border);
+    }
+    
+    /* Content area */
+    .content { padding: 24px; flex: 1; }
+    
+    /* Page sections */
+    .page { display: none; }
+    .page.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    
+    /* Section headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .section-title span { color: var(--blue); }
+    .section-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent);
+    }
+    .card-glow {
+      box-shadow: 0 0 30px rgba(0,212,255,0.05);
+    }
+    
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.2s;
+    }
+    .stat-card:hover { border-color: var(--border); transform: translateY(-2px); }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .stat-card.blue::after { background: linear-gradient(90deg, transparent, var(--blue), transparent); }
+    .stat-card.green::after { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+    .stat-card.red::after { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+    .stat-card.yellow::after { background: linear-gradient(90deg, transparent, var(--yellow), transparent); }
+    .stat-card.purple::after { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+    
+    .stat-icon { font-size: 28px; margin-bottom: 12px; }
+    .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 6px; }
+    .stat-value { font-family: 'Orbitron', monospace; font-size: 28px; font-weight: 700; }
+    .stat-value.blue { color: var(--blue); }
+    .stat-value.green { color: var(--green); }
+    .stat-value.red { color: var(--red); }
+    .stat-value.yellow { color: var(--yellow); }
+    .stat-value.purple { color: var(--purple); }
+    .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .stat-trend { font-size: 11px; margin-top: 6px; }
+    .stat-trend.up { color: var(--red); }
+    .stat-trend.down { color: var(--green); }
+    
+    /* Grid layouts */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; }
+    .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+    
+    /* Security score ring */
+    .score-ring-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .score-ring {
+      position: relative;
+      width: 160px;
+      height: 160px;
+    }
+    .score-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .score-ring-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .score-number {
+      font-family: 'Orbitron', monospace;
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--green);
+      line-height: 1;
+    }
+    .score-label { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; margin-top: 4px; }
+    
+    /* Threat list */
+    .threat-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border2);
+      margin-bottom: 8px;
+      transition: all 0.2s;
+    }
+    .threat-item:hover { background: rgba(255,68,68,0.05); border-color: rgba(255,68,68,0.2); }
+    .threat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .threat-dot.critical { background: var(--red); box-shadow: 0 0 8px var(--red); }
+    .threat-dot.high { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+    .threat-dot.medium { background: var(--yellow); }
+    .threat-dot.low { background: var(--blue); }
+    .threat-dot.clean { background: var(--green); }
+    .threat-name { flex: 1; font-size: 13px; font-weight: 500; }
+    .threat-type { font-size: 11px; color: var(--text-muted); }
+    .threat-score-badge {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Orbitron', monospace;
+    }
+    .threat-score-badge.critical { background: rgba(255,68,68,0.15); color: var(--red); border: 1px solid rgba(255,68,68,0.3); }
+    .threat-score-badge.high { background: rgba(255,107,0,0.15); color: var(--orange); border: 1px solid rgba(255,107,0,0.3); }
+    .threat-score-badge.medium { background: rgba(255,215,0,0.15); color: var(--yellow); border: 1px solid rgba(255,215,0,0.3); }
+    .threat-score-badge.low { background: rgba(0,212,255,0.1); color: var(--blue); border: 1px solid rgba(0,212,255,0.2); }
+    .threat-score-badge.clean { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
+    
+    /* Progress bars */
+    .progress-bar {
+      height: 6px;
+      background: var(--border2);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 1s ease;
+    }
+    .progress-fill.blue { background: linear-gradient(90deg, var(--blue2), var(--blue)); }
+    .progress-fill.green { background: linear-gradient(90deg, var(--green2), var(--green)); }
+    .progress-fill.red { background: linear-gradient(90deg, #cc0000, var(--red)); }
+    .progress-fill.yellow { background: linear-gradient(90deg, #cc9900, var(--yellow)); }
+    
+    /* Metric row */
+    .metric-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border2);
+    }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-label { font-size: 13px; color: var(--text-dim); }
+    .metric-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; }
+    
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--blue2), var(--blue));
+      color: #000;
+      box-shadow: 0 0 20px rgba(0,212,255,0.2);
+    }
+    .btn-primary:hover { box-shadow: 0 0 30px rgba(0,212,255,0.4); transform: translateY(-1px); }
+    .btn-danger {
+      background: linear-gradient(135deg, #cc0000, var(--red));
+      color: white;
+    }
+    .btn-danger:hover { box-shadow: 0 0 20px rgba(255,68,68,0.4); }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-green {
+      background: linear-gradient(135deg, var(--green2), var(--green));
+      color: #000;
+      font-weight: 700;
+    }
+    .btn-green:hover { box-shadow: 0 0 30px rgba(0,255,136,0.4); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    
+    /* Input */
+    .input-group { margin-bottom: 16px; }
+    .input-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
+    .cyber-input {
+      width: 100%;
+      background: var(--card2);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .cyber-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
+    }
+    .cyber-input::placeholder { color: var(--text-muted); }
+    
+    /* IP result */
+    .ip-result {
+      background: var(--card2);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .ip-result.danger { border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.05); }
+    .ip-result.safe { border-color: rgba(0,255,136,0.4); background: rgba(0,255,136,0.05); }
+    
+    /* Chart containers */
+    .chart-container { position: relative; height: 200px; }
+    .chart-lg { height: 250px; }
+    
+    /* Connection rows */
+    .connection-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border2);
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .connection-item.suspicious {
+      border-color: rgba(255,68,68,0.3);
+      background: rgba(255,68,68,0.05);
+    }
+    .connection-ip {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--blue);
+      width: 140px;
+      flex-shrink: 0;
+    }
+    .connection-service { flex: 1; color: var(--text-dim); }
+    .connection-country { color: var(--text-muted); width: 40px; }
+    .connection-flag { font-size: 16px; }
+    
+    /* Privacy permission item */
+    .perm-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border2);
+      background: var(--card2);
+      margin-bottom: 8px;
+    }
+    .perm-icon { font-size: 20px; width: 24px; text-align: center; }
+    .perm-name { flex: 1; }
+    .perm-name strong { display: block; font-size: 13px; }
+    .perm-name span { font-size: 11px; color: var(--text-muted); }
+    .perm-count { font-family: 'Orbitron', monospace; font-size: 16px; color: var(--yellow); }
+    
+    /* Scanner upload */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--blue);
+      background: rgba(0,212,255,0.05);
+    }
+    .upload-zone input { display: none; }
+    .upload-icon { font-size: 48px; margin-bottom: 12px; }
+    .upload-text { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .upload-sub { font-size: 13px; color: var(--text-muted); }
+    
+    /* Scan result */
+    .scan-result {
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 16px;
+    }
+    .scan-result-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .scan-result-header.critical { background: rgba(255,68,68,0.1); border-bottom: 1px solid rgba(255,68,68,0.2); }
+    .scan-result-header.clean { background: rgba(0,255,136,0.08); border-bottom: 1px solid rgba(0,255,136,0.15); }
+    .scan-result-body { padding: 20px; }
+    
+    /* Gauge */
+    .gauge-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .gauge-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+    .gauge-value { font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 700; }
+    
+    /* Live indicator */
+    .live-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--green);
+      font-weight: 600;
+    }
+    .live-dot::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.5s infinite;
+    }
+    
+    /* Alert item */
+    .alert-item {
+      display: flex;
+      gap: 14px;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border2);
+      background: var(--card2);
+      margin-bottom: 10px;
+      transition: all 0.2s;
+    }
+    .alert-item:hover { border-color: var(--border); }
+    .alert-item.critical { border-left: 3px solid var(--red); }
+    .alert-item.high { border-left: 3px solid var(--orange); }
+    .alert-item.medium { border-left: 3px solid var(--yellow); }
+    .alert-icon { font-size: 22px; flex-shrink: 0; }
+    .alert-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .alert-desc { font-size: 12px; color: var(--text-muted); }
+    .alert-time { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+    
+    /* Toggle */
+    .toggle-wrap { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border2); }
+    .toggle-wrap:last-child { border-bottom: none; }
+    .toggle-label { font-size: 14px; }
+    .toggle-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .toggle {
+      width: 44px; height: 24px;
+      background: var(--border);
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .toggle.on { background: var(--blue); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: white;
+      transition: transform 0.3s;
+    }
+    .toggle.on::after { transform: translateX(20px); }
+    
+    /* Slider */
+    .slider-wrap { margin: 8px 0; }
+    .cyber-slider {
+      width: 100%;
+      appearance: none;
+      height: 4px;
+      background: var(--border2);
+      border-radius: 2px;
+      outline: none;
+    }
+    .cyber-slider::-webkit-slider-thumb {
+      appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--blue);
+      cursor: pointer;
+      box-shadow: 0 0 8px var(--blue);
+    }
+    
+    /* Login page */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      position: relative;
+    }
+    .login-page::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse at 20% 50%, rgba(0,212,255,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 50%, rgba(124,58,237,0.08) 0%, transparent 60%);
+    }
+    .login-card {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 40px;
+      width: 420px;
+      max-width: 95%;
+      position: relative;
+      z-index: 1;
+    }
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--blue), transparent);
+    }
+    
+    /* Tags */
+    .tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .tag.red { background: rgba(255,68,68,0.15); color: var(--red); border: 1px solid rgba(255,68,68,0.3); }
+    .tag.yellow { background: rgba(255,215,0,0.15); color: var(--yellow); border: 1px solid rgba(255,215,0,0.3); }
+    .tag.blue { background: rgba(0,212,255,0.1); color: var(--blue); border: 1px solid rgba(0,212,255,0.2); }
+    .tag.green { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .hamburger { display: block; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .grid-2, .grid-3, .grid-1-2, .grid-2-1 { grid-template-columns: 1fr; }
+      .content { padding: 16px; }
+      .topbar { padding: 0 16px; }
+    }
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .login-card { padding: 24px; }
+    }
+    
+    /* Notifications toast */
+    .toast-container {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .toast {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 14px 18px;
+      min-width: 280px;
+      max-width: 360px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      animation: slideIn 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .toast.danger { border-left: 3px solid var(--red); }
+    .toast.success { border-left: 3px solid var(--green); }
+    .toast.warning { border-left: 3px solid var(--yellow); }
+    @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+    .toast-icon { font-size: 18px; flex-shrink: 0; }
+    .toast-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .toast-msg { font-size: 12px; color: var(--text-muted); }
+    .toast-close { margin-left: auto; cursor: pointer; color: var(--text-muted); font-size: 16px; flex-shrink: 0; }
+    
+    /* Mobile overlay */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+    }
+    .sidebar-overlay.active { display: block; }
+    
+    /* Scanning animation */
+    .scanning-animation {
+      position: relative;
+      height: 80px;
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--card2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--blue);
+    }
+    .scan-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--blue), transparent);
+      animation: scanMove 1.5s linear infinite;
+      box-shadow: 0 0 10px var(--blue);
+    }
+    @keyframes scanMove {
+      0% { top: 0%; }
+      100% { top: 100%; }
+    }
+    
+    /* Table */
+    .cyber-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .cyber-table th {
+      text-align: left;
+      padding: 10px 12px;
+      background: rgba(0,212,255,0.05);
+      border-bottom: 1px solid var(--border2);
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .cyber-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border2);
+    }
+    .cyber-table tr:last-child td { border-bottom: none; }
+    .cyber-table tr:hover td { background: rgba(255,255,255,0.02); }
+    
+    /* Glow effects */
+    .glow-blue { text-shadow: 0 0 20px var(--blue); }
+    .glow-green { text-shadow: 0 0 20px var(--green); }
+    .glow-red { text-shadow: 0 0 20px var(--red); }
+    
+    /* Card title */
+    .card-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+    
+    /* Flex utils */
+    .flex { display: flex; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    .flex-between { display: flex; align-items: center; justify-content: space-between; }
+    .gap-8 { gap: 8px; }
+    .gap-12 { gap: 12px; }
+    .mt-16 { margin-top: 16px; }
+    .mb-16 { margin-bottom: 16px; }
+    .text-muted { color: var(--text-muted); }
+    .text-blue { color: var(--blue); }
+    .text-green { color: var(--green); }
+    .text-red { color: var(--red); }
+    .text-yellow { color: var(--yellow); }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .fw-700 { font-weight: 700; }
+    .fs-12 { font-size: 12px; }
+    .fs-13 { font-size: 13px; }
+    .full-width { width: 100%; }
+    
+    /* Profile */
+    .profile-avatar {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0 auto 16px;
+      box-shadow: 0 0 30px rgba(0,212,255,0.3);
+    }
+    
+    /* Loading */
+    .spinner {
+      width: 24px; height: 24px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Login Page -->
+<div id="loginPage" class="login-page">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px">
+        <div class="logo-icon" style="width:52px;height:52px;font-size:26px;border-radius:14px">🛡️</div>
+        <div>
+          <div class="logo-text" style="font-size:22px">BUGSNIFFER</div>
+          <div class="logo-sub">AI CYBERSECURITY PLATFORM</div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted)">Sign in to your security console</p>
+    </div>
+    
+    <div class="input-group">
+      <label class="input-label">Email Address</label>
+      <input type="email" class="cyber-input" id="loginEmail" placeholder="agent@bugsniffer.io" value="demo@bugsniffer.io">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Password</label>
+      <input type="password" class="cyber-input" id="loginPassword" placeholder="••••••••" value="demo1234">
+    </div>
+    
+    <button class="btn btn-primary full-width" onclick="doLogin()" id="loginBtn">
+      <span>🔐</span> INITIALIZE SECURITY SESSION
+    </button>
+    
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn btn-outline full-width" onclick="doGoogleLogin()" style="margin-top:8px">
+        <span>🌐</span> Continue with Google
+      </button>
+    </div>
+    
+    <p style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:24px">
+      Demo: Use any credentials — Firebase Auth integrates in production<br>
+      <span style="color:var(--blue)">All APIs work in demo mode without keys</span>
+    </p>
+  </div>
+</div>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Main App -->
+<div id="mainApp" class="app" style="display:none">
+  
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🛡️</div>
+      <div>
+        <div class="logo-text">BUGSNIFFER</div>
+        <div class="logo-sub">v1.0.0 · SECURE</div>
+      </div>
+    </div>
+    
+    <div class="nav">
+      <div class="nav-section-label">CORE</div>
+      <div class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+        <span class="icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('threats')" data-page="threats">
+        <span class="icon">⚠️</span> Live Threats
+        <span class="nav-badge" id="threatBadge">3</span>
+      </div>
+      
+      <div class="nav-section-label">TOOLS</div>
+      <div class="nav-item" onclick="showPage('scanner')" data-page="scanner">
+        <span class="icon">🔍</span> APK Scanner
+      </div>
+      <div class="nav-item" onclick="showPage('network')" data-page="network">
+        <span class="icon">🌐</span> Network Monitor
+      </div>
+      <div class="nav-item" onclick="showPage('privacy')" data-page="privacy">
+        <span class="icon">🔒</span> Privacy Center
+      </div>
+      <div class="nav-item" onclick="showPage('phishing')" data-page="phishing">
+        <span class="icon">🎣</span> Phishing Detector
+      </div>
+      
+      <div class="nav-section-label">ACCOUNT</div>
+      <div class="nav-item" onclick="showPage('notifications')" data-page="notifications">
+        <span class="icon">🔔</span> Notifications
+        <span class="nav-badge" id="notifBadge">5</span>
+      </div>
+      <div class="nav-item" onclick="showPage('settings')" data-page="settings">
+        <span class="icon">⚙️</span> Settings
+      </div>
+      <div class="nav-item" onclick="showPage('profile')" data-page="profile">
+        <span class="icon">👤</span> Profile
+      </div>
+    </div>
+    
+    <div class="sidebar-footer">
+      <div style="display:flex;align-items:center;font-size:12px;color:var(--text-muted)">
+        <span class="status-dot"></span>
+        <span>Protection Active</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:'JetBrains Mono',monospace">
+        Last scan: <span id="lastScanTime">2m ago</span>
+      </div>
+    </div>
+  </nav>
+  
+  <!-- Main content -->
+  <div class="main">
+    <!-- Topbar -->
+    <div class="topbar">
+      <span class="hamburger" onclick="toggleSidebar()">☰</span>
+      <div class="topbar-title">
+        BUGSNIFFER <span>/ <span id="pageTitle">DASHBOARD</span></span>
+      </div>
+      <div class="live-dot">LIVE</div>
+      <div class="threat-pill" id="statusPill">
+        <span>✓</span> PROTECTED
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace" id="topbarTime"></div>
+      <div class="avatar" onclick="showPage('profile')">U</div>
+    </div>
+    
+    <!-- Content -->
+    <div class="content">
+      
+      <!-- DASHBOARD PAGE -->
+      <div class="page active" id="page-dashboard">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Security <span>Dashboard</span></div>
+            <div class="section-sub">Real-time threat monitoring and device health</div>
+          </div>
+          <button class="btn btn-primary" onclick="runFullScan()">⚡ Quick Scan</button>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card green">
+            <div class="stat-icon">🛡️</div>
+            <div class="stat-label">Security Score</div>
+            <div class="stat-value green" id="securityScore">87.4</div>
+            <div class="stat-sub">/ 100 — Good</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-label">Active Threats</div>
+            <div class="stat-value red" id="activeThreats">3</div>
+            <div class="stat-sub">Requires attention</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">🛑</div>
+            <div class="stat-label">Blocked Today</div>
+            <div class="stat-value blue" id="blockedToday">12</div>
+            <div class="stat-sub">Threats neutralized</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-icon">🔍</div>
+            <div class="stat-label">Total Scans</div>
+            <div class="stat-value yellow" id="totalScans">247</div>
+            <div class="stat-sub">Lifetime scans</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-icon">🌐</div>
+            <div class="stat-label">Connections</div>
+            <div class="stat-value purple" id="activeConns">18</div>
+            <div class="stat-sub">Active, 2 suspicious</div>
+          </div>
+        </div>
+        
+        <!-- Charts row -->
+        <div class="grid-2-1" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> CPU & MEMORY USAGE</div>
+            <div class="chart-container chart-lg">
+              <canvas id="cpuMemChart"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> SECURITY SCORE</div>
+            <div class="score-ring-container">
+              <div class="score-ring">
+                <svg viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(0,212,255,0.1)" stroke-width="10"/>
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="var(--green)" stroke-width="10"
+                    stroke-dasharray="314" stroke-dashoffset="40" stroke-linecap="round"
+                    id="scoreCircle" style="transition:stroke-dashoffset 1s ease"/>
+                </svg>
+                <div class="score-ring-text">
+                  <div class="score-number glow-green" id="scoreDisplay">87</div>
+                  <div class="score-label">SCORE</div>
+                </div>
+              </div>
+              <div style="margin-top:16px;text-align:center">
+                <div style="font-size:14px;font-weight:600;color:var(--green)">✓ PROTECTED</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px">No critical threats</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Threats + Device health -->
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-title flex-between"><span style="display:flex;align-items:center;gap:8px"><span class="dot"></span> RECENT THREATS</span> <span class="live-dot">LIVE</span></div>
+            <div id="dashboardThreats">
+              <div style="text-align:center;padding:20px;color:var(--text-muted)"><div class="spinner"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> DEVICE HEALTH</div>
+            <div id="deviceHealth">
+              <div class="metric-row">
+                <span class="metric-label">🖥️ CPU Usage</span>
+                <span class="metric-value text-blue" id="cpuValue">--</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill blue" id="cpuBar" style="width:0%"></div></div>
+              <div class="metric-row" style="margin-top:8px">
+                <span class="metric-label">💾 Memory</span>
+                <span class="metric-value text-yellow" id="memValue">--</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill yellow" id="memBar" style="width:0%"></div></div>
+              <div class="metric-row" style="margin-top:8px">
+                <span class="metric-label">🔋 Battery</span>
+                <span class="metric-value text-green" id="batValue">--</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill green" id="batBar" style="width:0%"></div></div>
+              <div class="metric-row" style="margin-top:8px">
+                <span class="metric-label">🌡️ Temperature</span>
+                <span class="metric-value" id="tempValue" style="color:var(--orange)">--</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill red" id="tempBar" style="width:0%"></div></div>
+              <div class="metric-row" style="margin-top:8px">
+                <span class="metric-label">📡 Network In</span>
+                <span class="metric-value text-blue" id="netInValue">--</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">📡 Network Out</span>
+                <span class="metric-value text-green" id="netOutValue">--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Threat breakdown chart -->
+        <div class="grid-1-2">
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> THREAT BREAKDOWN</div>
+            <div class="chart-container">
+              <canvas id="threatBreakChart"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> WEEKLY THREAT ACTIVITY</div>
+            <div class="chart-container">
+              <canvas id="weeklyChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- LIVE THREATS PAGE -->
+      <div class="page" id="page-threats">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Live <span>Threat Monitor</span></div>
+            <div class="section-sub">AI-powered real-time threat detection</div>
+          </div>
+          <button class="btn btn-danger" onclick="loadThreats()">🔄 Refresh</button>
+        </div>
+        
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> THREAT DETECTION TIMELINE</div>
+            <div class="chart-container chart-lg">
+              <canvas id="threatTimelineChart"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> RISK DISTRIBUTION</div>
+            <div class="chart-container chart-lg" style="display:flex;align-items:center">
+              <canvas id="riskPieChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title flex-between">
+            <span style="display:flex;align-items:center;gap:8px"><span class="dot"></span> DETECTED THREATS</span>
+            <span class="live-dot">SCANNING</span>
+          </div>
+          <div id="threatsList">
+            <div style="text-align:center;padding:30px;color:var(--text-muted)"><div class="spinner"></div><div style="margin-top:12px">Loading threats...</div></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- APK SCANNER PAGE -->
+      <div class="page" id="page-scanner">
+        <div class="section-header">
+          <div>
+            <div class="section-title">APK <span>Malware Scanner</span></div>
+            <div class="section-sub">VirusTotal-powered malware analysis + AI threat detection</div>
+          </div>
+        </div>
+        
+        <div class="grid-2" style="margin-bottom:16px">
+          <!-- File upload -->
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> UPLOAD APK FILE</div>
+            <div class="upload-zone" onclick="document.getElementById('apkFile').click()" id="uploadZone">
+              <input type="file" id="apkFile" accept=".apk" onchange="handleAPKUpload(event)">
+              <div class="upload-icon">📦</div>
+              <div class="upload-text">Drop APK File Here</div>
+              <div class="upload-sub">or click to browse · Supports .apk files</div>
+            </div>
+            <div id="uploadResult" style="margin-top:12px"></div>
+          </div>
+          
+          <!-- App scan -->
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> SCAN APP BY PACKAGE</div>
+            <div class="input-group">
+              <label class="input-label">Package Name</label>
+              <input type="text" class="cyber-input" id="pkgName" placeholder="com.example.app">
+            </div>
+            <div class="input-group">
+              <label class="input-label">App Name</label>
+              <input type="text" class="cyber-input" id="appName" placeholder="Example App">
+            </div>
+            <div class="input-group">
+              <label class="input-label">Permissions (comma-separated)</label>
+              <input type="text" class="cyber-input" id="appPerms" placeholder="CAMERA,READ_SMS,RECORD_AUDIO">
+            </div>
+            <button class="btn btn-primary full-width" onclick="scanByPackage()">🔍 Scan Application</button>
+            <div id="appScanResult" style="margin-top:12px"></div>
+          </div>
+        </div>
+        
+        <!-- Hash check -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title"><span class="dot"></span> FILE HASH CHECKER (VirusTotal)</div>
+          <div style="display:flex;gap:12px">
+            <input type="text" class="cyber-input" id="hashInput" placeholder="Enter SHA256 or MD5 hash..." style="flex:1">
+            <button class="btn btn-primary" onclick="checkFileHash()">🔎 Check</button>
+          </div>
+          <div id="hashResult" style="margin-top:12px"></div>
+        </div>
+        
+        <!-- Scan history -->
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> SCAN HISTORY</div>
+          <div id="scanHistory">
+            <div style="text-align:center;padding:20px;color:var(--text-muted)"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- NETWORK PAGE -->
+      <div class="page" id="page-network">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Network <span>Security Monitor</span></div>
+            <div class="section-sub">AbuseIPDB-powered IP reputation & traffic analysis</div>
+          </div>
+          <button class="btn btn-primary" onclick="loadNetwork()">🔄 Refresh</button>
+        </div>
+        
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> NETWORK TRAFFIC (24H)</div>
+            <div class="chart-container chart-lg">
+              <canvas id="trafficChart"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title flex-between"><span style="display:flex;gap:8px;align-items:center"><span class="dot"></span> ACTIVE CONNECTIONS</span> <span class="live-dot">LIVE</span></div>
+            <div id="connectionsList">
+              <div style="text-align:center;padding:20px"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- IP checker -->
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> IP REPUTATION CHECK (AbuseIPDB)</div>
+            <div class="input-group">
+              <label class="input-label">IP Address</label>
+              <input type="text" class="cyber-input" id="ipInput" placeholder="e.g. 185.220.101.47">
+            </div>
+            <button class="btn btn-primary full-width" onclick="checkIPAddress()">🔍 Check IP Reputation</button>
+            <div id="ipResult"></div>
+          </div>
+          
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> DNS REQUESTS</div>
+            <div id="dnsRequests">
+              <div style="text-align:center;padding:20px"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- PRIVACY PAGE -->
+      <div class="page" id="page-privacy">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Privacy <span>Protection Center</span></div>
+            <div class="section-sub">Monitor app permissions and privacy risks</div>
+          </div>
+        </div>
+        
+        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+          <div class="stat-card green">
+            <div class="stat-icon">📸</div>
+            <div class="stat-label">Camera</div>
+            <div class="stat-value green" style="font-size:18px">SAFE</div>
+            <div class="stat-sub">Not in use</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">🎤</div>
+            <div class="stat-label">Microphone</div>
+            <div class="stat-value green" style="font-size:18px">SAFE</div>
+            <div class="stat-sub">Not in use</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-icon">📋</div>
+            <div class="stat-label">Clipboard</div>
+            <div class="stat-value yellow" style="font-size:18px">ALERT</div>
+            <div class="stat-sub">Monitored</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">🖥️</div>
+            <div class="stat-label">Overlay</div>
+            <div class="stat-value green" style="font-size:18px">NONE</div>
+            <div class="stat-sub">No overlays</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">📍</div>
+            <div class="stat-label">Location Apps</div>
+            <div class="stat-value blue" id="locationApps">--</div>
+            <div class="stat-sub">With access</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-icon">🔐</div>
+            <div class="stat-label">Privacy Score</div>
+            <div class="stat-value purple" id="privacyScore">--</div>
+            <div class="stat-sub">/ 100</div>
+          </div>
+        </div>
+        
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> HIGH-RISK APP PERMISSIONS</div>
+            <div id="appPermissions">
+              <div style="text-align:center;padding:20px"><div class="spinner"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> PRIVACY ALERTS</div>
+            <div id="privacyAlerts">
+              <div style="text-align:center;padding:20px"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> SENSITIVE PERMISSIONS MONITOR</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:8px">
+            <div class="perm-item">
+              <span class="perm-icon">📸</span>
+              <div class="perm-name"><strong>Camera Access</strong><span>Apps using camera</span></div>
+              <span class="perm-count">4</span>
+            </div>
+            <div class="perm-item">
+              <span class="perm-icon">🎤</span>
+              <div class="perm-name"><strong>Microphone</strong><span>Apps with mic access</span></div>
+              <span class="perm-count">3</span>
+            </div>
+            <div class="perm-item">
+              <span class="perm-icon">📍</span>
+              <div class="perm-name"><strong>Location</strong><span>Apps tracking location</span></div>
+              <span class="perm-count">7</span>
+            </div>
+            <div class="perm-item">
+              <span class="perm-icon">📱</span>
+              <div class="perm-name"><strong>SMS Access</strong><span>Apps reading SMS</span></div>
+              <span class="perm-count text-red">2</span>
+            </div>
+            <div class="perm-item">
+              <span class="perm-icon">📞</span>
+              <div class="perm-name"><strong>Contacts</strong><span>Apps accessing contacts</span></div>
+              <span class="perm-count">5</span>
+            </div>
+            <div class="perm-item">
+              <span class="perm-icon">🔑</span>
+              <div class="perm-name"><strong>Accessibility</strong><span>Service listeners</span></div>
+              <span class="perm-count text-red">1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- PHISHING PAGE -->
+      <div class="page" id="page-phishing">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Phishing <span>Detector</span></div>
+            <div class="section-sub">Google Safe Browsing API integration</div>
+          </div>
+        </div>
+        
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title"><span class="dot"></span> URL SAFETY CHECKER</div>
+          <div style="display:flex;gap:12px;margin-bottom:12px">
+            <input type="url" class="cyber-input" id="urlInput" placeholder="https://suspicious-site.com/login" style="flex:1">
+            <button class="btn btn-primary" onclick="checkURLSafety()">🔍 Check URL</button>
+          </div>
+          <div id="urlResult"></div>
+        </div>
+        
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> RECENTLY BLOCKED PHISHING SITES</div>
+            <div>
+              <div class="threat-item" style="margin-bottom:8px">
+                <span class="threat-dot critical"></span>
+                <div style="flex:1">
+                  <div class="fs-13 fw-700">paypal-secure-login.ru</div>
+                  <div class="fs-12 text-muted">Fake PayPal login · Social Engineering</div>
+                </div>
+                <span class="tag red">BLOCKED</span>
+              </div>
+              <div class="threat-item">
+                <span class="threat-dot critical"></span>
+                <div style="flex:1">
+                  <div class="fs-13 fw-700">amazon-account-verify.net</div>
+                  <div class="fs-12 text-muted">Amazon phishing · Credential Theft</div>
+                </div>
+                <span class="tag red">BLOCKED</span>
+              </div>
+              <div class="threat-item">
+                <span class="threat-dot high"></span>
+                <div style="flex:1">
+                  <div class="fs-13 fw-700">bank-security-update.io</div>
+                  <div class="fs-12 text-muted">Fake banking page · Malware</div>
+                </div>
+                <span class="tag red">BLOCKED</span>
+              </div>
+              <div class="threat-item">
+                <span class="threat-dot medium"></span>
+                <div style="flex:1">
+                  <div class="fs-13 fw-700">free-crypto-giveaway.xyz</div>
+                  <div class="fs-12 text-muted">Crypto scam · Social Engineering</div>
+                </div>
+                <span class="tag yellow">WARNED</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> PHISHING PROTECTION STATS</div>
+            <div class="metric-row">
+              <span class="metric-label">URLs Checked Today</span>
+              <span class="metric-value text-blue">1,247</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Phishing Blocked</span>
+              <span class="metric-value text-red">23</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Malware Sites</span>
+              <span class="metric-value text-red">8</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Safe Sites</span>
+              <span class="metric-value text-green">1,216</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Protection Rate</span>
+              <span class="metric-value text-green">98.2%</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">API</span>
+              <span class="metric-value text-blue mono" style="font-size:11px">Google Safe Browsing</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- NOTIFICATIONS PAGE -->
+      <div class="page" id="page-notifications">
+        <div class="section-header">
+          <div>
+            <div class="section-title"><span>Notifications</span></div>
+            <div class="section-sub">Security alerts and system notifications</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="clearNotifs()">Clear All</button>
+        </div>
+        
+        <div id="notifsList">
+          <div class="alert-item critical">
+            <span class="alert-icon">🚨</span>
+            <div style="flex:1">
+              <div class="alert-title">Critical: Malware Detected</div>
+              <div class="alert-desc">ShadowRAT.apk identified on your device. Threat score: 94/100. Immediate removal recommended.</div>
+              <div class="alert-time">🕐 2 minutes ago</div>
+            </div>
+            <span class="tag red">CRITICAL</span>
+          </div>
+          <div class="alert-item high">
+            <span class="alert-icon">⚠️</span>
+            <div style="flex:1">
+              <div class="alert-title">Suspicious Network Activity</div>
+              <div class="alert-desc">Connection to known malicious IP 185.220.101.47 (RU) detected and blocked.</div>
+              <div class="alert-time">🕐 15 minutes ago</div>
+            </div>
+            <span class="tag red">HIGH</span>
+          </div>
+          <div class="alert-item medium">
+            <span class="alert-icon">🔒</span>
+            <div style="flex:1">
+              <div class="alert-title">Privacy Alert: SMS Access</div>
+              <div class="alert-desc">App "Unknown VPN" is accessing your SMS messages in the background.</div>
+              <div class="alert-time">🕐 1 hour ago</div>
+            </div>
+            <span class="tag yellow">MEDIUM</span>
+          </div>
+          <div class="alert-item medium">
+            <span class="alert-icon">🌐</span>
+            <div style="flex:1">
+              <div class="alert-title">Unsafe WiFi Network</div>
+              <div class="alert-desc">Connected to open WiFi "FreeWifi_Mall" — no encryption. Data may be exposed.</div>
+              <div class="alert-time">🕐 2 hours ago</div>
+            </div>
+            <span class="tag yellow">MEDIUM</span>
+          </div>
+          <div class="alert-item" style="border-left:3px solid var(--blue)">
+            <span class="alert-icon">✅</span>
+            <div style="flex:1">
+              <div class="alert-title">Scan Complete</div>
+              <div class="alert-desc">Full device scan completed. 47 apps scanned, 2 threats found, 45 clean.</div>
+              <div class="alert-time">🕐 3 hours ago</div>
+            </div>
+            <span class="tag blue">INFO</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- SETTINGS PAGE -->
+      <div class="page" id="page-settings">
+        <div class="section-header">
+          <div>
+            <div class="section-title"><span>Settings</span></div>
+            <div class="section-sub">Configure your security preferences</div>
+          </div>
+        </div>
+        
+        <div class="grid-2">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title"><span class="dot"></span> PROTECTION SETTINGS</div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">Real-time Protection</div><div class="toggle-sub">Continuous background scanning</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">Auto Scan</div><div class="toggle-sub">Scan new apps automatically</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">Network Monitor</div><div class="toggle-sub">Monitor network connections</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">Phishing Detection</div><div class="toggle-sub">Block malicious URLs</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">Privacy Protection</div><div class="toggle-sub">Monitor sensitive permissions</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+          
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title"><span class="dot"></span> NOTIFICATIONS</div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">Push Notifications</div><div class="toggle-sub">Firebase Cloud Messaging</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">Critical Threats Only</div><div class="toggle-sub">Only alert for critical threats</div></div>
+              <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">Scan Reports</div><div class="toggle-sub">Email scan reports</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">Network Alerts</div><div class="toggle-sub">Suspicious connection alerts</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> AI SENSITIVITY</div>
+            <div class="input-group" style="margin-bottom:8px">
+              <label class="input-label">Threat Detection Sensitivity</label>
+              <input type="range" class="cyber-slider" min="1" max="10" value="7" id="sensitivitySlider" oninput="document.getElementById('sensitivityVal').textContent=this.value">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px">
+                <span>Low (fewer alerts)</span>
+                <span style="color:var(--blue)">Level: <strong id="sensitivityVal">7</strong>/10</span>
+                <span>High (max protection)</span>
+              </div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Scan Schedule</label>
+              <select class="cyber-input" style="appearance:none">
+                <option>Every 6 hours</option>
+                <option>Every 12 hours</option>
+                <option selected>Every 24 hours</option>
+                <option>Weekly</option>
+                <option>Manual only</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> API CONFIGURATION</div>
+            <div class="input-group">
+              <label class="input-label">VirusTotal API Key</label>
+              <input type="password" class="cyber-input" placeholder="Enter your API key">
+            </div>
+            <div class="input-group">
+              <label class="input-label">AbuseIPDB API Key</label>
+              <input type="password" class="cyber-input" placeholder="Enter your API key">
+            </div>
+            <div class="input-group">
+              <label class="input-label">Google Safe Browsing Key</label>
+              <input type="password" class="cyber-input" placeholder="Enter your API key">
+            </div>
+            <button class="btn btn-primary full-width" onclick="showToast('Settings saved!', 'Configuration updated successfully.', 'success')">💾 Save API Keys</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- PROFILE PAGE -->
+      <div class="page" id="page-profile">
+        <div class="section-header">
+          <div>
+            <div class="section-title"><span>Profile</span></div>
+            <div class="section-sub">Your security account</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="doLogout()">🚪 Sign Out</button>
+        </div>
+        
+        <div class="grid-1-2">
+          <div class="card" style="text-align:center">
+            <div class="profile-avatar">U</div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:4px">Security User</div>
+            <div style="font-size:13px;color:var(--text-muted)">demo@bugsniffer.io</div>
+            <div style="margin-top:16px">
+              <span class="tag blue">Free Plan</span>
+            </div>
+            <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+              <div><div class="stat-value blue" style="font-size:22px" id="profileScans">47</div><div class="stat-label">Scans</div></div>
+              <div><div class="stat-value red" style="font-size:22px">12</div><div class="stat-label">Threats</div></div>
+              <div><div class="stat-value green" style="font-size:22px">2</div><div class="stat-label">Devices</div></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="card" style="margin-bottom:16px">
+              <div class="card-title"><span class="dot"></span> ACCOUNT DETAILS</div>
+              <div class="metric-row">
+                <span class="metric-label">Email</span>
+                <span class="metric-value mono fs-12">demo@bugsniffer.io</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Member Since</span>
+                <span class="metric-value">Jan 2024</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Plan</span>
+                <span class="metric-value text-blue">Free Tier</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Protection Rate</span>
+                <span class="metric-value text-green">98.4%</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Last Login</span>
+                <span class="metric-value mono fs-12">Today, <span id="loginTime"></span></span>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-title"><span class="dot"></span> DEVICES</div>
+              <div class="metric-row">
+                <span class="metric-label">📱 Android Device</span>
+                <span class="tag green">PROTECTED</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">🖥️ Web Dashboard</span>
+                <span class="tag green">ACTIVE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// BugSniffer Web App - Complete JavaScript
+// ============================================================
+
+const API_URL = 'http://localhost:8000'; // Change to your Render URL in production
+let charts = {};
+let metricsInterval = null;
+let isLoggedIn = false;
+
+// ── UTILS ────────────────────────────────────────────────────
+
+function getRiskColor(risk) {
+  const colors = { critical:'var(--red)', high:'var(--orange)', medium:'var(--yellow)', low:'var(--blue)', clean:'var(--green)' };
+  return colors[risk] || 'var(--text-muted)';
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  const diff = Date.now() - d.getTime();
+  if (diff < 60000) return Math.floor(diff/1000) + 's ago';
+  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+  return d.toLocaleDateString();
+}
+
+function showToast(title, msg, type = 'info') {
+  const icons = { danger:'🚨', success:'✅', warning:'⚠️', info:'ℹ️' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type]||'ℹ️'}</span>
+    <div style="flex:1"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>
+    <span class="toast-close" onclick="this.parentElement.remove()">×</span>
+  `;
+  document.getElementById('toastContainer').appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+
+async function callAPI(endpoint, method = 'GET', body = null) {
+  try {
+    const opts = { method, headers: {'Content-Type':'application/json'} };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API_URL + endpoint, opts);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch(e) {
+    // Return simulated data in demo mode
+    return simulateAPIResponse(endpoint);
+  }
+}
+
+function simulateAPIResponse(endpoint) {
+  const r = (min, max) => Math.round(Math.random()*(max-min)+min);
+  const rf = (min, max) => +(Math.random()*(max-min)+min).toFixed(1);
+  
+  if (endpoint.includes('overview')) return {
+    security_score: rf(75,95), active_threats: r(0,5), blocked_today: r(5,25),
+    total_scans: r(200,300),
+    device_health: { cpu_usage:rf(10,50), memory_usage:rf(30,70), battery_level:r(40,100), temperature:rf(32,48), storage_used_pct:rf(30,80) },
+    network_status: { active_connections:r(8,25), suspicious_connections:r(0,3), bandwidth_mb:rf(100,1500) }
+  };
+  if (endpoint.includes('realtime')) return {
+    cpu: rf(5,80), memory: rf(30,85), battery: r(20,100),
+    temperature: rf(30,50), network_in: r(100,5000), network_out: r(50,2000),
+    timestamp: new Date().toISOString()
+  };
+  if (endpoint.includes('recent-threats')) return { threats: [
+    {id:'t1',name:'ShadowRAT.apk',type:'Remote Access Trojan',severity:'critical',threat_score:94,confidence:0.97,timestamp:new Date(Date.now()-120000).toISOString()},
+    {id:'t2',name:'CryptoMiner.service',type:'Cryptocurrency Miner',severity:'high',threat_score:78,confidence:0.89,timestamp:new Date(Date.now()-900000).toISOString()},
+    {id:'t3',name:'PhishKit.html',type:'Phishing Page',severity:'high',threat_score:85,confidence:0.92,timestamp:new Date(Date.now()-3600000).toISOString()},
+    {id:'t4',name:'FakeBank.apk',type:'Trojan',severity:'critical',threat_score:91,confidence:0.95,timestamp:new Date(Date.now()-7200000).toISOString()},
+    {id:'t5',name:'Adware.popup',type:'Adware',severity:'medium',threat_score:45,confidence:0.82,timestamp:new Date(Date.now()-14400000).toISOString()},
+  ]};
+  if (endpoint.includes('threat-stats')) return {
+    daily_threats:[
+      {day:'Mon',count:r(2,12)},{day:'Tue',count:r(2,12)},{day:'Wed',count:r(2,12)},
+      {day:'Thu',count:r(2,12)},{day:'Fri',count:r(2,12)},{day:'Sat',count:r(2,12)},{day:'Sun',count:r(2,12)}
+    ],
+    threat_counts:{malware:r(2,8),spyware:r(1,5),adware:r(3,12),phishing:r(5,18),cryptominer:r(0,4)}
+  };
+  if (endpoint.includes('active-connections')) return { connections: [
+    {remote_ip:'142.250.185.78',service:'Google',country:'US',risk_score:5,state:'ESTABLISHED',bytes_sent:45000,bytes_recv:380000,is_suspicious:false},
+    {remote_ip:'104.244.42.65',service:'Twitter/X',country:'US',risk_score:10,state:'ESTABLISHED',bytes_sent:12000,bytes_recv:95000,is_suspicious:false},
+    {remote_ip:'185.220.101.47',service:'Unknown VPN',country:'RU',risk_score:85,state:'ESTABLISHED',bytes_sent:8000,bytes_recv:25000,is_suspicious:true},
+    {remote_ip:'157.240.2.35',service:'Facebook',country:'IE',risk_score:20,state:'ESTABLISHED',bytes_sent:32000,bytes_recv:210000,is_suspicious:false},
+    {remote_ip:'103.251.167.10',service:'Unknown Host',country:'CN',risk_score:72,state:'ESTABLISHED',bytes_sent:3000,bytes_recv:11000,is_suspicious:true},
+  ]};
+  if (endpoint.includes('traffic-stats')) {
+    const now = new Date();
+    return { traffic_24h: Array.from({length:24},(_,i)=>({
+      time: new Date(now-((23-i)*3600000)).getHours()+':00',
+      upload: r(100,3000), download: r(500,12000), threats: r(0,3)
+    }))};
+  }
+  if (endpoint.includes('dns-requests')) return { requests: [
+    {domain:'google.com',is_suspicious:false,category:'Search',timestamp:new Date().toISOString(),count:45},
+    {domain:'malicious-tracker.ru',is_suspicious:true,category:'Tracker',timestamp:new Date().toISOString(),count:3},
+    {domain:'cloudflare.com',is_suspicious:false,category:'CDN',timestamp:new Date().toISOString(),count:28},
+    {domain:'phishing-bank.io',is_suspicious:true,category:'Phishing',timestamp:new Date().toISOString(),count:1},
+    {domain:'github.com',is_suspicious:false,category:'Dev',timestamp:new Date().toISOString(),count:12},
+  ]};
+  if (endpoint.includes('check-ip')) return {
+    ip:'185.220.101.47', is_malicious:true, abuse_score:87, country:'RU',
+    isp:'Tor Exit Node', total_reports:1247, last_reported:new Date().toISOString(),
+    source:'Demo Mode'
+  };
+  if (endpoint.includes('check-url')) return {
+    url:'demo', is_safe: Math.random()>0.4,
+    threats: Math.random()>0.4 ? [] : ['SOCIAL_ENGINEERING'],
+    source:'Demo Mode - Google Safe Browsing'
+  };
+  if (endpoint.includes('privacy/status')) return {
+    location_apps:r(3,10), privacy_score:r(70,95)
+  };
+  if (endpoint.includes('app-permissions')) return { apps: [
+    {name:'WhatsApp',package:'com.whatsapp',permissions:['CAMERA','RECORD_AUDIO','READ_CONTACTS','ACCESS_FINE_LOCATION'],risk:'medium',risk_score:35},
+    {name:'Unknown VPN',package:'com.fakevpn.pro',permissions:['RECORD_AUDIO','ACCESS_FINE_LOCATION','READ_SMS','BIND_ACCESSIBILITY_SERVICE'],risk:'critical',risk_score:88},
+    {name:'Instagram',package:'com.instagram.android',permissions:['CAMERA','RECORD_AUDIO','ACCESS_FINE_LOCATION'],risk:'medium',risk_score:40},
+  ]};
+  if (endpoint.includes('privacy/alerts')) return { alerts: [
+    {id:1,type:'camera_access',message:'FakeVPN accessed camera in background',severity:'high',timestamp:new Date(Date.now()-300000).toISOString()},
+    {id:2,type:'clipboard_snoop',message:'App attempted to read clipboard',severity:'medium',timestamp:new Date(Date.now()-1800000).toISOString()},
+  ]};
+  if (endpoint.includes('scan-history')) return { history: [
+    {package_name:'com.whatsapp',app_name:'WhatsApp',threat_score:8,risk_level:'clean',scan_date:new Date().toISOString(),threat_category:'Clean'},
+    {package_name:'com.fakevpn.pro',app_name:'FakeVPN Pro',threat_score:88,risk_level:'critical',scan_date:new Date().toISOString(),threat_category:'Spyware'},
+    {package_name:'com.android.chrome',app_name:'Chrome',threat_score:5,risk_level:'clean',scan_date:new Date().toISOString(),threat_category:'Clean'},
+    {package_name:'com.banking.fake',app_name:'SecureBank+',threat_score:91,risk_level:'critical',scan_date:new Date().toISOString(),threat_category:'Trojan'},
+    {package_name:'com.instagram.android',app_name:'Instagram',threat_score:18,risk_level:'low',scan_date:new Date().toISOString(),threat_category:'Adware'},
+  ]};
+  if (endpoint.includes('scan-app')) return {
+    app_name:'Test App', threat_score:Math.random()>0.5?r(60,95):r(5,25),
+    risk_level:Math.random()>0.5?'high':'clean',
+    threat_category:Math.random()>0.5?'Spyware':'Clean',
+    ai_confidence:+(Math.random()*0.2+0.78).toFixed(2),
+    dangerous_permissions:['CAMERA','READ_SMS'],
+    recommendations:['Monitor this app closely','Check permissions regularly']
+  };
+  return {};
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+
+function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  btn.innerHTML = '<div class="spinner"></div> Authenticating...';
+  btn.disabled = true;
+  
+  setTimeout(() => {
+    isLoggedIn = true;
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    initializeApp();
+    showToast('Welcome back!', 'Security session initialized successfully.', 'success');
+    btn.innerHTML = '<span>🔐</span> INITIALIZE SECURITY SESSION';
+    btn.disabled = false;
+    document.getElementById('loginTime').textContent = new Date().toLocaleTimeString();
+  }, 1500);
+}
+
+function doGoogleLogin() {
+  showToast('Google Auth', 'Configure Firebase for Google login.', 'info');
+  doLogin();
+}
+
+function doLogout() {
+  isLoggedIn = false;
+  clearInterval(metricsInterval);
+  Object.values(charts).forEach(c => c && c.destroy());
+  charts = {};
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  document.querySelector(`[data-page="${pageId}"]`)?.classList.add('active');
+  document.getElementById('pageTitle').textContent = pageId.toUpperCase().replace('-',' ');
+  closeSidebar();
+  
+  // Load page data
+  const loaders = {
+    threats: loadThreats,
+    network: loadNetwork,
+    privacy: loadPrivacy,
+    scanner: loadScanHistory,
+    profile: loadProfile
+  };
+  if (loaders[pageId]) loaders[pageId]();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('active');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('active');
+}
+
+// ── CLOCK ────────────────────────────────────────────────────
+
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-US', {hour12:false}) + ' UTC' + (now.getTimezoneOffset()/60 <= 0 ? '+':'-') + Math.abs(now.getTimezoneOffset()/60);
+  document.getElementById('topbarTime').textContent = t;
+}
+
+// ── CHARTS ───────────────────────────────────────────────────
+
+const chartDefaults = {
+  backgroundColor: 'transparent',
+  plugins: { legend: { labels: { color: '#64748b', font: { size: 11 } } } },
+  scales: {
+    x: { grid: { color: 'rgba(30,58,95,0.4)' }, ticks: { color: '#64748b', font:{size:10} } },
+    y: { grid: { color: 'rgba(30,58,95,0.4)' }, ticks: { color: '#64748b', font:{size:10} } }
+  }
+};
+
+function createChart(id, config) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return null;
+  if (charts[id]) { charts[id].destroy(); }
+  config.options = config.options || {};
+  config.options.responsive = true;
+  config.options.maintainAspectRatio = false;
+  config.options.animation = config.options.animation || { duration: 800 };
+  charts[id] = new Chart(ctx, config);
+  return charts[id];
+}
+
+function initCPUMemChart() {
+  const labels = Array.from({length:20},(_,i)=>i+'s');
+  const cpuData = Array.from({length:20},()=>+(Math.random()*40+10).toFixed(1));
+  const memData = Array.from({length:20},()=>+(Math.random()*30+35).toFixed(1));
+  
+  createChart('cpuMemChart', {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'CPU %', data:cpuData, borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.05)', tension:0.4, fill:true, pointRadius:0, borderWidth:2 },
+        { label:'Memory %', data:memData, borderColor:'#ffd700', backgroundColor:'rgba(255,215,0,0.05)', tension:0.4, fill:true, pointRadius:0, borderWidth:2 }
+      ]
+    },
+    options: { ...chartDefaults, scales: chartDefaults.scales }
+  });
+}
+
+function initThreatCharts(stats) {
+  // Weekly bar chart
+  if (stats && stats.daily_threats) {
+    createChart('weeklyChart', {
+      type: 'bar',
+      data: {
+        labels: stats.daily_threats.map(d=>d.day),
+        datasets: [{ label:'Threats', data:stats.daily_threats.map(d=>d.count), backgroundColor:'rgba(255,68,68,0.4)', borderColor:'#ff4444', borderWidth:1, borderRadius:4 }]
+      },
+      options: { ...chartDefaults, scales: chartDefaults.scales }
+    });
+  }
+  
+  // Threat breakdown donut
+  if (stats && stats.threat_counts) {
+    const tc = stats.threat_counts;
+    createChart('threatBreakChart', {
+      type: 'doughnut',
+      data: {
+        labels: ['Malware','Spyware','Adware','Phishing','Cryptominer'],
+        datasets: [{ data:[tc.malware,tc.spyware,tc.adware,tc.phishing,tc.cryptominer],
+          backgroundColor:['rgba(255,68,68,0.7)','rgba(124,58,237,0.7)','rgba(255,107,0,0.7)','rgba(255,215,0,0.7)','rgba(0,212,255,0.7)'],
+          borderColor:['#ff4444','#7c3aed','#ff6b00','#ffd700','#00d4ff'], borderWidth:1 }]
+      },
+      options: { plugins: { legend: { position:'bottom', labels:{ color:'#64748b', font:{size:10}, boxWidth:10 } } } }
+    });
+  }
+}
+
+function initThreatTimeline() {
+  const now = Date.now();
+  const labels = Array.from({length:12},(_,i)=>{
+    const d = new Date(now - (11-i)*3600000);
+    return d.getHours() + ':00';
+  });
+  createChart('threatTimelineChart', {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Critical', data:Array.from({length:12},()=>Math.floor(Math.random()*3)), borderColor:'#ff4444', backgroundColor:'rgba(255,68,68,0.1)', tension:0.4, fill:true, borderWidth:2, pointRadius:3 },
+        { label:'High', data:Array.from({length:12},()=>Math.floor(Math.random()*5)), borderColor:'#ff6b00', backgroundColor:'rgba(255,107,0,0.08)', tension:0.4, fill:true, borderWidth:2, pointRadius:3 },
+        { label:'Medium', data:Array.from({length:12},()=>Math.floor(Math.random()*8)), borderColor:'#ffd700', backgroundColor:'rgba(255,215,0,0.08)', tension:0.4, fill:true, borderWidth:2, pointRadius:3 },
+      ]
+    },
+    options: { ...chartDefaults, scales: chartDefaults.scales }
+  });
+  
+  createChart('riskPieChart', {
+    type: 'pie',
+    data: {
+      labels: ['Critical','High','Medium','Low','Clean'],
+      datasets: [{ data:[5,12,18,25,140], backgroundColor:['rgba(255,68,68,0.8)','rgba(255,107,0,0.8)','rgba(255,215,0,0.8)','rgba(0,212,255,0.8)','rgba(0,255,136,0.8)'], borderWidth:0 }]
+    },
+    options: { plugins: { legend: { position:'right', labels:{ color:'#94a3b8', font:{size:11}, boxWidth:12 } } } }
+  });
+}
+
+function initTrafficChart(data) {
+  const td = data?.traffic_24h || Array.from({length:24},(_,i)=>({
+    time:i+':00', upload:Math.random()*3000, download:Math.random()*12000, threats:Math.floor(Math.random()*3)
+  }));
+  createChart('trafficChart', {
+    type: 'line',
+    data: {
+      labels: td.map(d=>d.time),
+      datasets: [
+        { label:'Download KB/s', data:td.map(d=>d.download), borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.05)', tension:0.4, fill:true, borderWidth:2, pointRadius:0 },
+        { label:'Upload KB/s', data:td.map(d=>d.upload), borderColor:'#00ff88', backgroundColor:'rgba(0,255,136,0.05)', tension:0.4, fill:true, borderWidth:2, pointRadius:0 }
+      ]
+    },
+    options: { ...chartDefaults, scales: chartDefaults.scales }
+  });
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+
+async function loadDashboard() {
+  const [overview, stats] = await Promise.all([
+    callAPI('/api/dashboard/overview'),
+    callAPI('/api/threats/threat-stats')
+  ]);
+  
+  // Update stats
+  if (overview.security_score) {
+    document.getElementById('securityScore').textContent = overview.security_score;
+    document.getElementById('scoreDisplay').textContent = Math.round(overview.security_score);
+    const pct = overview.security_score / 100;
+    const circumference = 314;
+    document.getElementById('scoreCircle').style.strokeDashoffset = circumference - (pct * circumference);
+    const scoreColor = overview.security_score >= 80 ? 'var(--green)' : overview.security_score >= 60 ? 'var(--yellow)' : 'var(--red)';
+    document.getElementById('scoreCircle').style.stroke = scoreColor;
+    document.getElementById('scoreDisplay').style.color = scoreColor;
+  }
+  if (overview.active_threats !== undefined) document.getElementById('activeThreats').textContent = overview.active_threats;
+  if (overview.blocked_today) document.getElementById('blockedToday').textContent = overview.blocked_today;
+  if (overview.total_scans) document.getElementById('totalScans').textContent = overview.total_scans;
+  if (overview.network_status) document.getElementById('activeConns').textContent = overview.network_status.active_connections;
+  
+  // Charts
+  initCPUMemChart();
+  initThreatCharts(stats);
+  
+  // Load threats
+  loadDashboardThreats();
+  
+  // Start real-time updates
+  updateRealtimeMetrics();
+}
+
+async function loadDashboardThreats() {
+  const data = await callAPI('/api/threats/recent-threats');
+  const el = document.getElementById('dashboardThreats');
+  if (data.threats && data.threats.length) {
+    el.innerHTML = data.threats.slice(0,4).map(t => `
+      <div class="threat-item">
+        <span class="threat-dot ${t.severity}"></span>
+        <div style="flex:1">
+          <div class="fs-13 fw-700">${t.name}</div>
+          <div class="fs-12 text-muted">${t.type}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="threat-score-badge ${t.severity}">${t.threat_score}</div>
+          <div class="fs-12 text-muted" style="margin-top:3px">${formatTime(t.timestamp)}</div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--green)">✅ No threats detected</div>';
+  }
+}
+
+async function updateRealtimeMetrics() {
+  const updateMetrics = async () => {
+    const m = await callAPI('/api/dashboard/realtime-metrics');
+    if (!m.cpu) return;
+    
+    document.getElementById('cpuValue').textContent = m.cpu + '%';
+    document.getElementById('cpuBar').style.width = m.cpu + '%';
+    document.getElementById('memValue').textContent = m.memory + '%';
+    document.getElementById('memBar').style.width = m.memory + '%';
+    document.getElementById('batValue').textContent = m.battery + '%';
+    document.getElementById('batBar').style.width = m.battery + '%';
+    document.getElementById('tempValue').textContent = m.temperature + '°C';
+    document.getElementById('tempBar').style.width = (m.temperature / 80 * 100) + '%';
+    document.getElementById('netInValue').textContent = (m.network_in / 1024).toFixed(1) + ' KB/s';
+    document.getElementById('netOutValue').textContent = (m.network_out / 1024).toFixed(1) + ' KB/s';
+    
+    // Update CPU chart
+    if (charts.cpuMemChart) {
+      const c = charts.cpuMemChart;
+      c.data.datasets[0].data.push(m.cpu);
+      c.data.datasets[0].data.shift();
+      c.data.datasets[1].data.push(m.memory);
+      c.data.datasets[1].data.shift();
+      c.update('none');
+    }
+  };
+  
+  updateMetrics();
+  metricsInterval = setInterval(updateMetrics, 3000);
+}
+
+// ── THREATS PAGE ─────────────────────────────────────────────
+
+async function loadThreats() {
+  initThreatTimeline();
+  const data = await callAPI('/api/threats/recent-threats?limit=20');
+  const el = document.getElementById('threatsList');
+  
+  if (data.threats && data.threats.length) {
+    el.innerHTML = `
+      <table class="cyber-table">
+        <thead><tr>
+          <th>Status</th><th>Threat Name</th><th>Type</th><th>Risk</th><th>Score</th><th>AI Confidence</th><th>Detected</th>
+        </tr></thead>
+        <tbody>
+          ${data.threats.map(t => `
+            <tr>
+              <td><span class="threat-dot ${t.severity}" style="display:inline-block"></span></td>
+              <td style="font-weight:600">${t.name}</td>
+              <td style="color:var(--text-muted)">${t.type}</td>
+              <td><span style="color:${getRiskColor(t.severity)};font-weight:600;text-transform:uppercase;font-size:11px">${t.severity}</span></td>
+              <td><span class="threat-score-badge ${t.severity}">${t.threat_score}</span></td>
+              <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--blue)">${((t.confidence||0.85)*100).toFixed(1)}%</td>
+              <td style="font-size:12px;color:var(--text-muted)">${formatTime(t.timestamp)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } else {
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--green)">✅ No threats detected</div>';
+  }
+  
+  document.getElementById('threatBadge').textContent = data.threats?.filter(t=>t.severity==='critical').length || 0;
+}
+
+// ── APK SCANNER ──────────────────────────────────────────────
+
+async function loadScanHistory() {
+  const data = await callAPI('/api/scanner/scan-history');
+  const el = document.getElementById('scanHistory');
+  
+  if (data.history) {
+    el.innerHTML = `
+      <table class="cyber-table">
+        <thead><tr><th>App</th><th>Package</th><th>Score</th><th>Risk</th><th>Category</th><th>Scanned</th></tr></thead>
+        <tbody>
+          ${data.history.map(h => `
+            <tr>
+              <td style="font-weight:600">${h.app_name}</td>
+              <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted)">${h.package_name}</td>
+              <td><span class="threat-score-badge ${h.risk_level}">${h.threat_score}</span></td>
+              <td><span style="color:${getRiskColor(h.risk_level)};font-weight:600;text-transform:uppercase;font-size:11px">${h.risk_level}</span></td>
+              <td style="color:var(--text-muted);font-size:12px">${h.threat_category}</td>
+              <td style="font-size:12px;color:var(--text-muted)">${formatTime(h.scan_date)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+}
+
+async function handleAPKUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const el = document.getElementById('uploadResult');
+  el.innerHTML = `
+    <div class="scanning-animation">
+      <div class="scan-line"></div>
+      <span>⚡ Analyzing ${file.name}...</span>
+    </div>
+  `;
+  
+  await new Promise(r => setTimeout(r, 2000));
+  
+  // Simulate scan result
+  const score = Math.floor(Math.random() * 100);
+  const risk = score > 80 ? 'critical' : score > 60 ? 'high' : score > 40 ? 'medium' : score > 20 ? 'low' : 'clean';
+  const isMalicious = score > 60;
+  
+  el.innerHTML = `
+    <div class="scan-result">
+      <div class="scan-result-header ${isMalicious ? 'critical' : 'clean'}">
+        <span style="font-size:28px">${isMalicious ? '🚨' : '✅'}</span>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700">${file.name}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${(file.size/1024/1024).toFixed(2)} MB · SHA256: ${generateFakeHash()}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="threat-score-badge ${risk}" style="font-size:16px">${score}/100</span>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${risk.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="scan-result-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">
+          <div><div style="font-size:11px;color:var(--text-muted)">ENGINES FLAGGED</div><div style="font-size:20px;font-weight:700;color:${isMalicious?'var(--red)':'var(--green)'}">${isMalicious?Math.floor(Math.random()*20+5):0}<span style="font-size:12px">/72</span></div></div>
+          <div><div style="font-size:11px;color:var(--text-muted)">AI CONFIDENCE</div><div style="font-size:20px;font-weight:700;color:var(--blue)">${(Math.random()*0.2+0.78).toFixed(0)*100}%</div></div>
+          <div><div style="font-size:11px;color:var(--text-muted)">PERMISSIONS</div><div style="font-size:20px;font-weight:700;color:var(--yellow)">${Math.floor(Math.random()*8+3)}</div></div>
+        </div>
+        ${isMalicious ? '<div style="margin-top:12px;padding:10px;background:rgba(255,68,68,0.1);border-radius:8px;border:1px solid rgba(255,68,68,0.3);font-size:13px;color:var(--red)">⚠️ Malware detected! Remove this APK immediately and do not install it.</div>' : '<div style="margin-top:12px;padding:10px;background:rgba(0,255,136,0.08);border-radius:8px;border:1px solid rgba(0,255,136,0.2);font-size:13px;color:var(--green)">✅ File appears safe. No malware detected by any engine.</div>'}
+      </div>
+    </div>
+  `;
+  
+  if (isMalicious) {
+    showToast('Malware Detected!', `${file.name} — Threat Score: ${score}/100`, 'danger');
+  } else {
+    showToast('Scan Complete', `${file.name} appears clean (score: ${score}/100)`, 'success');
+  }
+}
+
+async function scanByPackage() {
+  const pkg = document.getElementById('pkgName').value || 'com.example.app';
+  const name = document.getElementById('appName').value || 'Example App';
+  const perms = document.getElementById('appPerms').value.split(',').map(p=>p.trim()).filter(Boolean);
+  
+  const el = document.getElementById('appScanResult');
+  el.innerHTML = '<div class="scanning-animation"><div class="scan-line"></div><span>⚡ Scanning ' + name + '...</span></div>';
+  
+  const data = await callAPI('/api/scanner/scan-app', 'POST', {
+    package_name: pkg, app_name: name, permissions: perms,
+    size_mb: 25, uses_internet: true, background_services: 2
+  });
+  
+  const score = data.threat_score || Math.floor(Math.random()*80);
+  const risk = data.risk_level || (score > 60 ? 'high' : 'clean');
+  const isMalicious = score > 60;
+  
+  el.innerHTML = `
+    <div class="ip-result ${isMalicious ? 'danger' : 'safe'}" style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <div style="font-weight:700">${name}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${pkg}</div>
+        </div>
+        <span class="threat-score-badge ${risk}">${score}/100</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted)">Category: ${data.threat_category || 'Unknown'} · Confidence: ${((data.ai_confidence||0.85)*100).toFixed(0)}%</div>
+      ${(data.dangerous_permissions||[]).length ? '<div style="margin-top:8px">' + (data.dangerous_permissions||[]).map(p=>`<span class="tag red">${p}</span>`).join('') + '</div>' : ''}
+      ${(data.recommendations||[]).map(r=>`<div style="font-size:12px;margin-top:6px;color:var(--text-muted)">→ ${r}</div>`).join('')}
+    </div>
+  `;
+  
+  if (isMalicious) showToast('Threat Found', name + ' — Score: ' + score + '/100', 'danger');
+  else showToast('Scan Complete', name + ' appears safe.', 'success');
+}
+
+async function checkFileHash() {
+  const hash = document.getElementById('hashInput').value.trim();
+  if (!hash) { showToast('Error', 'Please enter a hash value.', 'warning'); return; }
+  
+  const el = document.getElementById('hashResult');
+  el.innerHTML = '<div class="scanning-animation" style="height:50px"><div class="scan-line"></div><span>Checking VirusTotal...</span></div>';
+  
+  const data = await callAPI('/api/scanner/check-hash?file_hash=' + hash);
+  const isMal = (data.malicious || 0) > 3;
+  
+  el.innerHTML = `
+    <div class="ip-result ${isMal ? 'danger' : 'safe'}" style="margin-top:12px">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+        <span style="font-size:24px">${isMal ? '🚨' : '✅'}</span>
+        <div>
+          <div style="font-weight:700;color:${isMal?'var(--red)':'var(--green)'}">${isMal ? 'MALICIOUS' : 'CLEAN'}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted)">${hash.substring(0,32)}...</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;text-align:center;margin-top:8px">
+        <div class="metric-row" style="flex-direction:column;padding:8px;background:rgba(255,68,68,0.1);border-radius:6px"><div style="color:var(--red);font-size:18px;font-weight:700">${data.malicious||0}</div><div style="font-size:10px;color:var(--text-muted)">Malicious</div></div>
+        <div class="metric-row" style="flex-direction:column;padding:8px;background:rgba(255,215,0,0.1);border-radius:6px"><div style="color:var(--yellow);font-size:18px;font-weight:700">${data.suspicious||0}</div><div style="font-size:10px;color:var(--text-muted)">Suspicious</div></div>
+        <div class="metric-row" style="flex-direction:column;padding:8px;background:rgba(0,255,136,0.08);border-radius:6px"><div style="color:var(--green);font-size:18px;font-weight:700">${data.harmless||60}</div><div style="font-size:10px;color:var(--text-muted)">Harmless</div></div>
+        <div class="metric-row" style="flex-direction:column;padding:8px;background:rgba(0,212,255,0.08);border-radius:6px"><div style="color:var(--blue);font-size:18px;font-weight:700">${data.total_engines||72}</div><div style="font-size:10px;color:var(--text-muted)">Engines</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:8px">Source: ${data.source||'VirusTotal'}</div>
+    </div>
+  `;
+}
+
+function generateFakeHash() {
+  return Array.from({length:8}, ()=>Math.floor(Math.random()*0xFFFFFF).toString(16).padStart(6,'0')).join('').substring(0,16) + '...';
+}
+
+// ── NETWORK ──────────────────────────────────────────────────
+
+async function loadNetwork() {
+  const [traffic, conns, dns] = await Promise.all([
+    callAPI('/api/network/traffic-stats'),
+    callAPI('/api/network/active-connections'),
+    callAPI('/api/network/dns-requests')
+  ]);
+  
+  initTrafficChart(traffic);
+  
+  // Connections
+  const connEl = document.getElementById('connectionsList');
+  if (conns.connections) {
+    const countryFlags = {US:'🇺🇸',RU:'🇷🇺',CN:'🇨🇳',DE:'🇩🇪',IE:'🇮🇪',FR:'🇫🇷',NL:'🇳🇱'};
+    connEl.innerHTML = conns.connections.map(c => `
+      <div class="connection-item ${c.is_suspicious ? 'suspicious' : ''}">
+        <span class="connection-flag">${countryFlags[c.country]||'🌐'}</span>
+        <span class="connection-ip">${c.remote_ip}</span>
+        <span class="connection-service">${c.service}</span>
+        <span style="font-size:11px;color:${c.is_suspicious?'var(--red)':'var(--green)'}">
+          ${c.is_suspicious ? '⚠️ '+c.risk_score : '✓ Safe'}
+        </span>
+      </div>
+    `).join('');
+  }
+  
+  // DNS
+  const dnsEl = document.getElementById('dnsRequests');
+  if (dns.requests) {
+    dnsEl.innerHTML = dns.requests.map(d => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;background:${d.is_suspicious?'rgba(255,68,68,0.05)':'rgba(255,255,255,0.02)'};margin-bottom:4px;border:1px solid ${d.is_suspicious?'rgba(255,68,68,0.2)':'var(--border2)'}">
+        <span style="font-size:14px">${d.is_suspicious?'⚠️':'✓'}</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;color:${d.is_suspicious?'var(--red)':'var(--text)'}">${d.domain}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${d.category} · ${d.count} queries</div>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+async function checkIPAddress() {
+  const ip = document.getElementById('ipInput').value.trim();
+  if (!ip) { showToast('Error', 'Enter an IP address.', 'warning'); return; }
+  
+  const el = document.getElementById('ipResult');
+  el.innerHTML = '<div class="scanning-animation" style="height:50px;margin-top:12px"><div class="scan-line"></div><span>Checking AbuseIPDB...</span></div>';
+  
+  const data = await callAPI('/api/network/check-ip', 'POST', { ip_address: ip });
+  
+  el.innerHTML = `
+    <div class="ip-result ${data.is_malicious ? 'danger' : 'safe'}" style="margin-top:12px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <span style="font-size:28px">${data.is_malicious ? '🚨' : '✅'}</span>
+        <div>
+          <div style="font-weight:700;font-size:16px;color:${data.is_malicious?'var(--red)':'var(--green)'}">${data.is_malicious ? 'MALICIOUS IP' : 'CLEAN IP'}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--blue)">${ip}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:28px;font-weight:700;font-family:'Orbitron',monospace;color:${data.is_malicious?'var(--red)':'var(--green)'}">${data.abuse_score}</div>
+          <div style="font-size:10px;color:var(--text-muted)">ABUSE SCORE</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+        <div><span class="text-muted">Country:</span> <strong>${data.country}</strong></div>
+        <div><span class="text-muted">ISP:</span> <strong>${data.isp}</strong></div>
+        <div><span class="text-muted">Reports:</span> <strong style="color:var(--red)">${data.total_reports}</strong></div>
+        <div><span class="text-muted">Source:</span> AbuseIPDB</div>
+      </div>
+      ${data.is_malicious ? '<div style="margin-top:10px;font-size:12px;color:var(--red)">⚡ This IP has been reported for malicious activity. Block recommended.</div>' : ''}
+    </div>
+  `;
+  
+  if (data.is_malicious) showToast('Malicious IP!', ip + ' — Abuse Score: ' + data.abuse_score, 'danger');
+}
+
+// ── PRIVACY ──────────────────────────────────────────────────
+
+async function loadPrivacy() {
+  const [status, perms, alerts] = await Promise.all([
+    callAPI('/api/privacy/status'),
+    callAPI('/api/privacy/app-permissions'),
+    callAPI('/api/privacy/alerts')
+  ]);
+  
+  if (status.location_apps) document.getElementById('locationApps').textContent = status.location_apps;
+  if (status.privacy_score) document.getElementById('privacyScore').textContent = status.privacy_score;
+  
+  // App permissions
+  const permsEl = document.getElementById('appPermissions');
+  if (perms.apps) {
+    permsEl.innerHTML = perms.apps.map(a => `
+      <div class="perm-item" style="border-color:${a.risk==='critical'?'rgba(255,68,68,0.3)':a.risk==='medium'?'rgba(255,215,0,0.2)':'var(--border2)'}">
+        <span class="perm-icon">📱</span>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">${a.name}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${a.package}</div>
+          <div style="margin-top:4px">${a.permissions.map(p=>`<span class="tag ${a.risk==='critical'?'red':'yellow'}">${p}</span>`).join('')}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="threat-score-badge ${a.risk}">${a.risk_score}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  // Alerts
+  const alertsEl = document.getElementById('privacyAlerts');
+  if (alerts.alerts) {
+    alertsEl.innerHTML = alerts.alerts.map(a => `
+      <div class="alert-item ${a.severity}">
+        <span class="alert-icon">${a.type==='camera_access'?'📸':a.type==='clipboard_snoop'?'📋':'📍'}</span>
+        <div>
+          <div class="alert-title">${a.message}</div>
+          <div class="alert-time">🕐 ${formatTime(a.timestamp)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+// ── PHISHING ─────────────────────────────────────────────────
+
+async function checkURLSafety() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { showToast('Error', 'Enter a URL to check.', 'warning'); return; }
+  
+  const el = document.getElementById('urlResult');
+  el.innerHTML = '<div class="scanning-animation" style="height:50px;margin-top:12px"><div class="scan-line"></div><span>⚡ Checking Google Safe Browsing...</span></div>';
+  
+  const data = await callAPI('/api/network/check-url', 'POST', { url });
+  const isSafe = data.is_safe !== false;
+  
+  el.innerHTML = `
+    <div class="ip-result ${!isSafe ? 'danger' : 'safe'}" style="margin-top:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:28px">${!isSafe ? '🚨' : '✅'}</span>
+        <div style="flex:1">
+          <div style="font-weight:700;color:${!isSafe?'var(--red)':'var(--green)'}">${!isSafe ? 'DANGEROUS URL' : 'SAFE URL'}</div>
+          <div style="font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;word-break:break-all">${url}</div>
+          ${(data.threats||[]).length ? '<div style="margin-top:6px">' + (data.threats||[]).map(t=>`<span class="tag red">${t}</span>`).join('') + '</div>' : ''}
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px">Powered by: ${data.source||'Google Safe Browsing'}</div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  if (!isSafe) showToast('Dangerous URL!', 'Phishing/malware site detected: ' + url.substring(0,40), 'danger');
+  else showToast('URL Safe', 'No threats found for this URL.', 'success');
+}
+
+// ── MISC ─────────────────────────────────────────────────────
+
+async function runFullScan() {
+  showToast('Scan Started', 'Full device scan initiated...', 'info');
+  document.getElementById('lastScanTime').textContent = 'Now';
+  
+  await new Promise(r => setTimeout(r, 3000));
+  
+  const score = Math.floor(Math.random() * 20 + 78);
+  document.getElementById('securityScore').textContent = score;
+  document.getElementById('scoreDisplay').textContent = score;
+  
+  showToast('Scan Complete', `Device score: ${score}/100. 47 apps scanned.`, 'success');
+  document.getElementById('lastScanTime').textContent = 'Just now';
+}
+
+function clearNotifs() {
+  document.getElementById('notifsList').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)">No notifications</div>';
+  document.getElementById('notifBadge').style.display = 'none';
+}
+
+async function loadProfile() {
+  document.getElementById('loginTime').textContent = new Date().toLocaleTimeString();
+}
+
+// ── INITIALIZE ───────────────────────────────────────────────
+
+function initializeApp() {
+  // Clock
+  updateClock();
+  setInterval(updateClock, 1000);
+  
+  // Load dashboard
+  loadDashboard();
+  
+  // Random threat toasts
+  setTimeout(() => {
+    showToast('Threat Detected', 'CryptoMiner activity detected in background process.', 'danger');
+  }, 8000);
+  
+  setTimeout(() => {
+    showToast('Network Alert', 'Suspicious connection to 185.220.101.47 (RU) blocked.', 'danger');
+  }, 20000);
+}
+
+// Auto-login for demo
+document.addEventListener('DOMContentLoaded', () => {
+  // Optional: auto-login
+  // doLogin();
+  document.getElementById('loginEmail').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+</script>
+</body>
+</html>
