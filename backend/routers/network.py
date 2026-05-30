@@ -1,6 +1,7 @@
 """Network Security Monitor API endpoints"""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from dependencies import get_current_user
 from pydantic import BaseModel
 from typing import List, Optional
 import httpx

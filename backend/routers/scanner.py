@@ -1,6 +1,8 @@
 """APK Scanner API endpoints with VirusTotal integration"""
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from dependencies import get_current_user
+from services.firebase_service import get_db
 from pydantic import BaseModel
 from typing import List, Optional
 import httpx

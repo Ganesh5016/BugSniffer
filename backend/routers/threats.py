@@ -1,6 +1,6 @@
 """Threat detection API endpoints"""
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 import httpx
@@ -8,7 +8,8 @@ import os
 from datetime import datetime
 import random
 from services.ai_engine import analyze_process, batch_analyze, get_risk_level
-from services.firebase_service import get_demo_threats, save_scan_report
+from services.firebase_service import get_demo_threats, save_scan_report, get_db
+from dependencies import get_current_user
 
 router = APIRouter()
 
