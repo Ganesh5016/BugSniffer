@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         password: _passCtrl.text,
       );
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
       }
     } on FirebaseAuthException catch (e) {
       setState(() {

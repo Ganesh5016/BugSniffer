@@ -37,7 +37,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
         password: _passCtrl.text,
       );
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
       }
     } on FirebaseAuthException catch (e) {
       setState(() {

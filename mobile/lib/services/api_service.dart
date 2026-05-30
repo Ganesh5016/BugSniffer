@@ -30,9 +30,9 @@ class ApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
-      return _fallback(endpoint);
+      return _emptyFallback(endpoint);
     } catch (e) {
-      return _fallback(endpoint);
+      return _emptyFallback(endpoint);
     }
   }
 
@@ -48,9 +48,9 @@ class ApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
-      return _fallback(endpoint);
+      return _emptyFallback(endpoint);
     } catch (e) {
-      return _fallback(endpoint);
+      return _emptyFallback(endpoint);
     }
   }
 
@@ -113,84 +113,34 @@ class ApiService {
   static Future<Map<String, dynamic>> getAppPermissions() =>
       _get('/api/privacy/app-permissions');
 
-  // Fallback demo data
-  static Map<String, dynamic> _fallback(String endpoint) {
-    final r = (int min, int max) => min + (DateTime.now().millisecondsSinceEpoch % (max - min));
-    
+  // Safe empty data for errors
+  static Map<String, dynamic> _emptyFallback(String endpoint) {
     if (endpoint.contains('overview')) {
       return {
-        'security_score': 87.4,
-        'active_threats': 3,
-        'blocked_today': 12,
-        'total_scans': 247,
-        'device_health': {
-          'cpu_usage': 28.5,
-          'memory_usage': 54.2,
-          'battery_level': 78,
-          'temperature': 38.5,
-        },
-        'network_status': {
-          'active_connections': 18,
-          'suspicious_connections': 2,
-          'wifi_secure': true,
-        },
+        'security_score': 100.0,
+        'active_threats': 0,
+        'blocked_today': 0,
+        'device_health': {'cpu_usage': 0, 'memory_usage': 0, 'battery_level': 100, 'temperature': 0},
+        'network_status': {'active_connections': 0, 'suspicious_connections': 0, 'wifi_secure': true},
+        'recent_scans': []
       };
     }
     if (endpoint.contains('realtime')) {
-      return {
-        'cpu': r(10, 60).toDouble(),
-        'memory': r(35, 75).toDouble(),
-        'battery': r(40, 100),
-        'temperature': r(30, 48).toDouble(),
-        'network_in': r(200, 3000),
-        'network_out': r(100, 1500),
-      };
+      return {'cpu': 0, 'memory': 0, 'battery': 100, 'temperature': 0, 'network_in': 0, 'network_out': 0};
     }
     if (endpoint.contains('recent-threats')) {
-      return {
-        'threats': [
-          {'id': 't1', 'name': 'ShadowRAT.apk', 'type': 'Remote Access Trojan', 'severity': 'critical', 'threat_score': 94, 'confidence': 0.97, 'timestamp': DateTime.now().subtract(const Duration(minutes: 2)).toIso8601String()},
-          {'id': 't2', 'name': 'CryptoMiner.service', 'type': 'Cryptocurrency Miner', 'severity': 'high', 'threat_score': 78, 'confidence': 0.89, 'timestamp': DateTime.now().subtract(const Duration(minutes: 15)).toIso8601String()},
-          {'id': 't3', 'name': 'FakeBank.apk', 'type': 'Trojan', 'severity': 'critical', 'threat_score': 91, 'confidence': 0.95, 'timestamp': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String()},
-          {'id': 't4', 'name': 'Adware.popup', 'type': 'Adware', 'severity': 'medium', 'threat_score': 45, 'confidence': 0.82, 'timestamp': DateTime.now().subtract(const Duration(hours: 3)).toIso8601String()},
-        ]
-      };
+      return {'threats': []};
     }
     if (endpoint.contains('active-connections')) {
-      return {
-        'connections': [
-          {'remote_ip': '142.250.185.78', 'service': 'Google', 'country': 'US', 'risk_score': 5, 'is_suspicious': false},
-          {'remote_ip': '185.220.101.47', 'service': 'Unknown VPN', 'country': 'RU', 'risk_score': 85, 'is_suspicious': true},
-          {'remote_ip': '104.244.42.65', 'service': 'Twitter/X', 'country': 'US', 'risk_score': 10, 'is_suspicious': false},
-        ]
-      };
+      return {'connections': []};
     }
     if (endpoint.contains('scan-history')) {
-      return {
-        'history': [
-          {'app_name': 'WhatsApp', 'package_name': 'com.whatsapp', 'threat_score': 8, 'risk_level': 'clean', 'threat_category': 'Clean'},
-          {'app_name': 'FakeVPN Pro', 'package_name': 'com.fakevpn.pro', 'threat_score': 88, 'risk_level': 'critical', 'threat_category': 'Spyware'},
-          {'app_name': 'Chrome', 'package_name': 'com.android.chrome', 'threat_score': 5, 'risk_level': 'clean', 'threat_category': 'Clean'},
-        ]
-      };
+      return {'history': []};
     }
-    if (endpoint.contains('privacy/status')) {
-      return {'location_apps': 6, 'privacy_score': 82, 'camera_in_use': false, 'microphone_in_use': false};
-    }
-    if (endpoint.contains('privacy/alerts')) {
+    if (endpoint.contains('threat-stats')) {
       return {
-        'alerts': [
-          {'type': 'camera_access', 'message': 'FakeVPN accessed camera in background', 'severity': 'high', 'timestamp': DateTime.now().subtract(const Duration(minutes: 5)).toIso8601String()},
-          {'type': 'clipboard_snoop', 'message': 'App attempted to read clipboard', 'severity': 'medium', 'timestamp': DateTime.now().subtract(const Duration(minutes: 30)).toIso8601String()},
-        ]
-      };
-    }
-    if (endpoint.contains('app-permissions')) {
-      return {
-        'apps': [
-          {'name': 'Unknown VPN', 'package': 'com.fakevpn.pro', 'permissions': ['READ_SMS', 'BIND_ACCESSIBILITY_SERVICE', 'RECORD_AUDIO'], 'risk': 'critical', 'risk_score': 88},
-          {'name': 'WhatsApp', 'package': 'com.whatsapp', 'permissions': ['CAMERA', 'RECORD_AUDIO', 'READ_CONTACTS'], 'risk': 'medium', 'risk_score': 35},
-        ]
+          "total_scans": 0, "threats_blocked": 0, "malware_detected": 0, "phishing_blocked": 0, "clean_apps": 0,
+          "protection_rate": 100.0, "daily_threats": []
       };
     }
     return {};
