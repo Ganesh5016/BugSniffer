@@ -102,53 +102,53 @@ async def scan_device(request: DeviceScanRequest):
 
 
 @router.get("/recent-threats")
-async def get_recent_threats(user_id: str = "demo", limit: int = 10):
+async def get_recent_threats(user: dict = Depends(get_current_user), limit: int = 10):
     """Get recent threat detections"""
-    # Return demo data + generated threats
-    base_threats = get_demo_threats()
+    db = get_db()
+    if not db:
+        return {"threats": [], "total": 0}
+        
+    uid = user.get("uid")
+    # Fetch real threats from Firestore
+    scans_ref = db.collection("scan_reports").where("user_id", "==", uid).order_by("created_at", direction="DESCENDING").limit(limit)
+    scans_docs = scans_ref.stream()
     
-    # Add some dynamic entries
-    dynamic_threats = [
-        {
-            "id": f"dynamic_{i}",
-            "name": random.choice([
-                "SuspiciousService.apk", "DataHarvest.exe", 
-                "FakeBank.apk", "ClickFraud.js",
-                "AdwareKit.dll", "SMSInterceptor.apk"
-            ]),
-            "type": random.choice([
-                "Adware", "Spyware", "Phishing", "Trojan", "Cryptominer"
-            ]),
-            "severity": random.choice(["low", "medium", "high", "critical"]),
-            "threat_score": random.randint(30, 95),
-            "confidence": round(random.uniform(0.75, 0.99), 2),
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        for i in range(3)
-    ]
-    
-    all_threats = base_threats + dynamic_threats
-    return {"threats": all_threats[:limit], "total": len(all_threats)}
+    threats = []
+    for doc in scans_docs:
+        data = doc.to_dict()
+        score = data.get("threat_score", 0)
+        if score > 40: # Only return actual threats
+            threats.append({
+                "id": doc.id,
+                "name": data.get("app_name", "Unknown App"),
+                "type": data.get("threat_category", "Suspicious"),
+                "severity": "critical" if score > 80 else ("high" if score > 60 else "medium"),
+                "threat_score": score,
+                "confidence": 0.95,
+                "timestamp": data.get("created_at", datetime.utcnow()).isoformat()
+            })
+            
+    return {"threats": threats, "total": len(threats)}
 
 
 @router.get("/threat-stats")
-async def get_threat_stats():
+async def get_threat_stats(user: dict = Depends(get_current_user)):
     """Get threat statistics for dashboard"""
     return {
-        "total_scans": random.randint(150, 300),
-        "threats_blocked": random.randint(20, 50),
-        "malware_detected": random.randint(5, 15),
-        "phishing_blocked": random.randint(10, 30),
-        "clean_apps": random.randint(100, 200),
+        "total_scans": 0,
+        "threats_blocked": 0,
+        "malware_detected": 0,
+        "phishing_blocked": 0,
+        "clean_apps": 0,
         "last_scan": datetime.utcnow().isoformat(),
-        "protection_rate": round(random.uniform(97.5, 99.9), 1),
+        "protection_rate": 100.0,
         "daily_threats": [
-            {"day": "Mon", "count": random.randint(2, 15)},
-            {"day": "Tue", "count": random.randint(2, 15)},
-            {"day": "Wed", "count": random.randint(2, 15)},
-            {"day": "Thu", "count": random.randint(2, 15)},
-            {"day": "Fri", "count": random.randint(2, 15)},
-            {"day": "Sat", "count": random.randint(2, 15)},
-            {"day": "Sun", "count": random.randint(2, 15)},
+            {"day": "Mon", "count": 0},
+            {"day": "Tue", "count": 0},
+            {"day": "Wed", "count": 0},
+            {"day": "Thu", "count": 0},
+            {"day": "Fri", "count": 0},
+            {"day": "Sat", "count": 0},
+            {"day": "Sun", "count": 0},
         ]
     }

@@ -149,44 +149,14 @@ async def check_url(request: URLCheckRequest):
 
 
 @router.get("/active-connections")
-async def get_active_connections(device_id: str = "demo"):
+async def get_active_connections(user: dict = Depends(get_current_user)):
     """Get active network connections"""
-    connections = []
-    
-    safe_ips = [
-        ("142.250.185.78", "Google", "US", 5),
-        ("104.244.42.65", "Twitter/X", "US", 10),
-        ("157.240.2.35", "Facebook", "IE", 20),
-        ("151.101.1.164", "Fastly CDN", "US", 8),
-        ("13.226.108.65", "Amazon CloudFront", "US", 3),
-    ]
-    
-    suspicious_ips = [
-        ("185.220.101.47", "Unknown VPN", "RU", 85),
-        ("103.251.167.10", "Suspicious Host", "CN", 72),
-    ]
-    
-    all_ips = safe_ips + (suspicious_ips if random.random() > 0.5 else [])
-    
-    for ip, service, country, risk in all_ips:
-        connections.append({
-            "remote_ip": ip,
-            "remote_port": random.choice([80, 443, 8080, 3000]),
-            "local_port": random.randint(40000, 65000),
-            "service": service,
-            "country": country,
-            "risk_score": risk,
-            "protocol": "TCP",
-            "state": "ESTABLISHED",
-            "bytes_sent": random.randint(1000, 100000),
-            "bytes_recv": random.randint(5000, 500000),
-            "is_suspicious": risk > 60
-        })
-    
+    # In a real production app, this would fetch from a database
+    # For now, return real (empty) data for the new user instead of fake scary IPs
     return {
-        "connections": connections,
-        "total": len(connections),
-        "suspicious_count": sum(1 for c in connections if c["is_suspicious"]),
+        "connections": [],
+        "total": 0,
+        "suspicious_count": 0,
         "timestamp": datetime.utcnow().isoformat()
     }
 

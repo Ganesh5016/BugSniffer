@@ -175,26 +175,28 @@ async def check_file_hash(file_hash: str):
 
 
 @router.get("/scan-history")
-async def get_scan_history(user_id: str = "demo"):
+async def get_scan_history(user: dict = Depends(get_current_user)):
     """Get APK scan history"""
-    history = []
-    apps = [
-        ("com.whatsapp", "WhatsApp", 5),
-        ("com.facebook.katana", "Facebook", 25),
-        ("com.instagram.android", "Instagram", 18),
-        ("com.suspicious.app", "FreeVPN Pro", 78),
-        ("com.clean.utility", "File Manager", 8),
-        ("com.banking.fake", "BankSecure", 91),
-    ]
+    db = get_db()
+    if not db:
+        return {"history": []}
+        
+    uid = user.get("uid")
+    # Fetch real scan history from Firestore
+    scans_ref = db.collection("scan_reports").where("user_id", "==", uid).order_by("created_at", direction="DESCENDING").limit(20)
+    scans_docs = scans_ref.stream()
     
-    for pkg, name, score in apps:
+    history = []
+    for doc in scans_docs:
+        data = doc.to_dict()
+        score = data.get("threat_score", 0)
         history.append({
-            "package_name": pkg,
-            "app_name": name,
+            "package_name": data.get("package_name", "Unknown"),
+            "app_name": data.get("app_name", "Unknown App"),
             "threat_score": score,
             "risk_level": "critical" if score > 80 else "high" if score > 60 else "low" if score > 20 else "clean",
-            "scan_date": datetime.utcnow().isoformat(),
-            "threat_category": "Clean" if score < 30 else "Suspicious"
+            "scan_date": data.get("created_at", datetime.utcnow()).isoformat(),
+            "threat_category": data.get("threat_category", "Clean" if score < 30 else "Suspicious")
         })
     
     return {"history": history}
