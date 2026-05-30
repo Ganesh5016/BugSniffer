@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../widgets/cyber_card.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // ── SCANNER SCREEN ──────────────────────────────────────────
 
@@ -550,7 +551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.person_outline, color: Color(0xFF64748B)),
-                title: const Text('demo@bugsniffer.io', style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 14)),
+                title: Text(FirebaseAuth.instance.currentUser?.email ?? 'agent@bugsniffer.io', style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 14)),
                 subtitle: const Text('Free Plan', style: TextStyle(color: Color(0xFF00D4FF), fontSize: 12)),
                 trailing: const Icon(Icons.chevron_right, color: Color(0xFF64748B)),
               ),

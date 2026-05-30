@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/api_service.dart';
+import 'package:battery_plus/battery_plus.dart';
 import '../widgets/cyber_card.dart';
 import '../widgets/threat_item_widget.dart';
 import '../widgets/metric_gauge.dart';
@@ -43,16 +44,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ApiService.getRecentThreats(),
       ApiService.getRealtimeMetrics(),
     ]);
+    
+    Map<String, dynamic> metricsData = results[2];
+    try {
+      final battery = Battery();
+      metricsData['battery'] = await battery.batteryLevel;
+    } catch (_) {}
+    
     setState(() {
       _overview = results[0];
       _threats = (results[1]['threats'] ?? []);
-      _metrics = results[2];
+      _metrics = metricsData;
       _loading = false;
     });
   }
 
   Future<void> _updateMetrics() async {
     final m = await ApiService.getRealtimeMetrics();
+    try {
+      final battery = Battery();
+      m['battery'] = await battery.batteryLevel;
+    } catch (_) {}
     if (mounted) setState(() => _metrics = m);
   }
 
@@ -180,7 +192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(height: 8),
                         _quickStat('Active Threats', threats.toString(), const Color(0xFFFF4444)),
                         _quickStat('Blocked Today', blocked.toString(), const Color(0xFF00D4FF)),
-                        _quickStat('Scans Done', (_overview['total_scans'] ?? 247).toString(), const Color(0xFF00FF88)),
+                        _quickStat('Scans Done', (_overview['total_scans'] ?? 0).toString(), const Color(0xFF00FF88)),
                       ],
                     ),
                   ),
@@ -195,13 +207,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(child: _metricCard('CPU', '${(_metrics['cpu'] ?? 28).toStringAsFixed(1)}%', const Color(0xFF00D4FF), Icons.memory)),
+                Expanded(child: _metricCard('CPU', '${(_metrics['cpu'] ?? 0).toStringAsFixed(1)}%', const Color(0xFF00D4FF), Icons.memory)),
                 const SizedBox(width: 8),
-                Expanded(child: _metricCard('RAM', '${(_metrics['memory'] ?? 54).toStringAsFixed(1)}%', const Color(0xFFFFD700), Icons.storage_outlined)),
+                Expanded(child: _metricCard('RAM', '${(_metrics['memory'] ?? 0).toStringAsFixed(1)}%', const Color(0xFFFFD700), Icons.storage_outlined)),
                 const SizedBox(width: 8),
-                Expanded(child: _metricCard('BATTERY', '${_metrics['battery'] ?? 78}%', const Color(0xFF00FF88), Icons.battery_charging_full)),
+                Expanded(child: _metricCard('BATTERY', '${_metrics['battery'] ?? 100}%', const Color(0xFF00FF88), Icons.battery_charging_full)),
                 const SizedBox(width: 8),
-                Expanded(child: _metricCard('TEMP', '${(_metrics['temperature'] ?? 38).toStringAsFixed(0)}°C', const Color(0xFFFF6B00), Icons.thermostat)),
+                Expanded(child: _metricCard('TEMP', '${(_metrics['temperature'] ?? 0).toStringAsFixed(0)}°C', const Color(0xFFFF6B00), Icons.thermostat)),
               ],
             ),
 
@@ -214,13 +226,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   const _SectionTitle('RESOURCE USAGE'),
                   const SizedBox(height: 12),
-                  _resourceBar('CPU Usage', (_metrics['cpu'] ?? 28.5) / 100, const Color(0xFF00D4FF)),
+                  _resourceBar('CPU Usage', (_metrics['cpu'] ?? 0.0) / 100, const Color(0xFF00D4FF)),
                   const SizedBox(height: 10),
-                  _resourceBar('Memory', (_metrics['memory'] ?? 54.2) / 100, const Color(0xFFFFD700)),
+                  _resourceBar('Memory', (_metrics['memory'] ?? 0.0) / 100, const Color(0xFFFFD700)),
                   const SizedBox(height: 10),
-                  _resourceBar('Battery', (_metrics['battery'] ?? 78) / 100, const Color(0xFF00FF88)),
+                  _resourceBar('Battery', (_metrics['battery'] ?? 100) / 100, const Color(0xFF00FF88)),
                   const SizedBox(height: 10),
-                  _resourceBar('Temperature', (_metrics['temperature'] ?? 38.5) / 80, const Color(0xFFFF6B00)),
+                  _resourceBar('Temperature', (_metrics['temperature'] ?? 0.0) / 80, const Color(0xFFFF6B00)),
                 ],
               ),
             ),
@@ -237,10 +249,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         const _SectionTitle('NETWORK'),
                         const SizedBox(height: 8),
-                        _networkStat('↓ Download', '${((_metrics['network_in'] ?? 1200) / 1024).toStringAsFixed(1)} KB/s', const Color(0xFF00D4FF)),
-                        _networkStat('↑ Upload', '${((_metrics['network_out'] ?? 400) / 1024).toStringAsFixed(1)} KB/s', const Color(0xFF00FF88)),
-                        _networkStat('Connections', '${_overview['network_status']?['active_connections'] ?? 18}', Colors.white),
-                        _networkStat('Suspicious', '${_overview['network_status']?['suspicious_connections'] ?? 2}', const Color(0xFFFF4444)),
+                        _networkStat('↓ Download', '${((_metrics['network_in'] ?? 0) / 1024).toStringAsFixed(1)} KB/s', const Color(0xFF00D4FF)),
+                        _networkStat('↑ Upload', '${((_metrics['network_out'] ?? 0) / 1024).toStringAsFixed(1)} KB/s', const Color(0xFF00FF88)),
+                        _networkStat('Connections', '${_overview['network_status']?['active_connections'] ?? 0}', Colors.white),
+                        _networkStat('Suspicious', '${_overview['network_status']?['suspicious_connections'] ?? 0}', const Color(0xFFFF4444)),
                       ],
                     ),
                   ),
