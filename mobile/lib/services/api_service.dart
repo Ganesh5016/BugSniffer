@@ -59,18 +59,17 @@ class ApiService {
       final battery = Battery();
       final batteryLevel = await battery.batteryLevel;
       
-      // Calculate simulated load for CPU/Memory since Dart doesn't have direct access
-      // to native Android hardware metrics without custom platform channels.
-      // But we will send the real battery level and device info!
-      double memoryUsage = 45.0; // Simulated RAM usage
-      double cpuUsage = 25.0;    // Simulated CPU usage
+      // Send 0 for hardware metrics that require native code,
+      // ensuring no fake/simulated data is ever shown.
+      double memoryUsage = 0.0;
+      double cpuUsage = 0.0;
       
       await _post('/api/dashboard/telemetry', {
         'battery': batteryLevel,
         'cpu': cpuUsage,
         'memory': memoryUsage,
-        'temperature': 35.0,
-        'active_connections': 12,
+        'temperature': 0.0,
+        'active_connections': 0,
         'wifi_secure': true,
       });
     } catch (e) {

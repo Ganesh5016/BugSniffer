@@ -162,54 +162,21 @@ async def get_active_connections(user: dict = Depends(get_current_user)):
 
 
 @router.get("/traffic-stats")
-async def get_traffic_stats():
+async def get_traffic_stats(user: dict = Depends(get_current_user)):
     """Get network traffic statistics"""
-    now = datetime.utcnow()
-    
-    traffic_data = []
-    for i in range(24):
-        hour = now - timedelta(hours=23-i)
-        traffic_data.append({
-            "time": hour.strftime("%H:00"),
-            "upload": random.randint(100, 5000),
-            "download": random.randint(500, 20000),
-            "threats": random.randint(0, 3)
-        })
-    
     return {
-        "traffic_24h": traffic_data,
-        "total_upload_mb": round(random.uniform(50, 500), 2),
-        "total_download_mb": round(random.uniform(200, 2000), 2),
-        "blocked_connections": random.randint(5, 50),
-        "safe_connections": random.randint(50, 200),
-        "dns_queries": random.randint(100, 1000),
-        "suspicious_dns": random.randint(0, 5)
+        "traffic_24h": [],
+        "total_upload_mb": 0.0,
+        "total_download_mb": 0.0,
+        "blocked_connections": 0,
+        "safe_connections": 0,
+        "dns_queries": 0,
+        "suspicious_dns": 0
     }
 
-
 @router.get("/dns-requests")
-async def get_dns_requests():
+async def get_dns_requests(user: dict = Depends(get_current_user)):
     """Get recent DNS requests"""
-    domains = [
-        ("google.com", False, "Search"),
-        ("facebook.com", False, "Social"),
-        ("malicious-tracker.ru", True, "Tracker"),
-        ("phishing-bank.com", True, "Phishing"),
-        ("cloudflare.com", False, "CDN"),
-        ("analytics.suspicious.io", True, "Analytics"),
-        ("github.com", False, "Dev"),
-        ("api.whatsapp.com", False, "Messaging"),
-    ]
-    
     return {
-        "requests": [
-            {
-                "domain": domain,
-                "is_suspicious": susp,
-                "category": cat,
-                "timestamp": (datetime.utcnow() - timedelta(minutes=random.randint(0, 60))).isoformat(),
-                "count": random.randint(1, 20)
-            }
-            for domain, susp, cat in domains
-        ]
+        "requests": []
     }
