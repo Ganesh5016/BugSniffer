@@ -162,13 +162,15 @@ class MainActivity: FlutterActivity() {
         try {
             val packages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
             for (packageInfo in packages) {
+                val appInfo = packageInfo.applicationInfo ?: continue
+                
                 // Filter out system apps unless they have been updated
-                if ((packageInfo.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0 &&
-                    (packageInfo.applicationInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0) {
+                if ((appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0 &&
+                    (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0) {
                     continue
                 }
                 
-                val appName = packageInfo.applicationInfo.loadLabel(pm).toString()
+                val appName = appInfo.loadLabel(pm).toString()
                 val packageName = packageInfo.packageName
                 val permissions = packageInfo.requestedPermissions?.toList() ?: emptyList()
                 
