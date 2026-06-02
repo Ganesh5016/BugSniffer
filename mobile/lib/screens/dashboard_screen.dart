@@ -272,8 +272,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         const _SectionTitle('NETWORK'),
                         const SizedBox(height: 8),
-                        _networkStat('↓ Download', '${((_metrics['network_in'] ?? 0) / 1024).toStringAsFixed(1)} KB/s', const Color(0xFF00D4FF)),
-                        _networkStat('↑ Upload', '${((_metrics['network_out'] ?? 0) / 1024).toStringAsFixed(1)} KB/s', const Color(0xFF00FF88)),
+                        _networkStat('↓ Download', '${((_metrics['network_in'] ?? 0) / (1024 * 1024)).toStringAsFixed(2)} MB/s', const Color(0xFF00D4FF)),
+                        _networkStat('↑ Upload', '${((_metrics['network_out'] ?? 0) / (1024 * 1024)).toStringAsFixed(2)} MB/s', const Color(0xFF00FF88)),
                         _networkStat('Connections', '${_overview['network_status']?['active_connections'] ?? 0}', Colors.white),
                         _networkStat('Suspicious', '${_overview['network_status']?['suspicious_connections'] ?? 0}', const Color(0xFFFF4444)),
                       ],

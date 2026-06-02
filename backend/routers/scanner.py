@@ -98,9 +98,15 @@ async def scan_application(request: AppScanRequest):
     # Dangerous permissions check
     dangerous_perms = [p for p in request.permissions if p in DANGEROUS_PERMISSIONS]
     
-    # Permission risk score
-    perm_score = len(dangerous_perms) * 8
-    total_score = min(100, (ai_result["threat_score"] * 0.6) + (perm_score * 0.4))
+    # Permission risk score (lower weight so it doesn't falsely flag normal apps)
+    perm_score = min(40, len(dangerous_perms) * 4)
+    total_score = (ai_result["threat_score"] * 0.5) + (perm_score * 0.5)
+    
+    # Whitelist popular safe prefixes to avoid false positives
+    if request.package_name.startswith(("com.google.", "com.android.", "com.whatsapp", "com.facebook", "com.instagram")):
+        total_score = min(total_score, 30.0)
+    else:
+        total_score = min(100.0, total_score)
     
     return {
         "package_name": request.package_name,

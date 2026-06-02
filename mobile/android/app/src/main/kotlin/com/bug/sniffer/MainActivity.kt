@@ -46,27 +46,28 @@ class MainActivity: FlutterActivity() {
 
     private fun getCpuUsage(): Double {
         try {
-            val reader = RandomAccessFile("/proc/stat", "r")
-            val load = reader.readLine()
-            reader.close()
+            val statFile = File("/proc/self/stat")
+            if (!statFile.exists()) return 0.0
+            val stat = statFile.readText().trim().split("\\s+".toRegex())
+            if (stat.size < 15) return 0.0
             
-            val toks = load.split(" +".toRegex()).toTypedArray()
-            val idle1 = toks[4].toLong()
-            val cpu1 = toks[1].toLong() + toks[2].toLong() + toks[3].toLong() +
-                    toks[5].toLong() + toks[6].toLong() + toks[7].toLong() + toks[8].toLong()
-
-            val diffIdle = idle1 - lastIdleTicks
-            val diffTotal = cpu1 - lastTotalTicks
-            val total = diffTotal + diffIdle
-
-            lastIdleTicks = idle1
-            lastTotalTicks = cpu1
-
-            if (total == 0L) return 0.0
-            var usage = (diffTotal.toDouble() / total) * 100.0
-            if (usage < 0.0) usage = 0.0
-            if (usage > 100.0) usage = 100.0
-            return usage
+            val utime = stat[13].toLong()
+            val stime = stat[14].toLong()
+            val totalTicks = utime + stime
+            val uptimeMillis = android.os.SystemClock.uptimeMillis()
+            
+            val diffTicks = totalTicks - lastTotalTicks
+            val diffUptime = uptimeMillis - lastIdleTicks
+            
+            lastTotalTicks = totalTicks
+            lastIdleTicks = uptimeMillis
+            
+            if (diffUptime <= 0 || lastIdleTicks == uptimeMillis) return 0.0
+            
+            // CPU usage % = (diffTicks * 10ms per tick) / diffUptime * 100 * num_cores
+            val numCores = Runtime.getRuntime().availableProcessors()
+            val usage = (diffTicks.toDouble() * 10.0 / diffUptime) * 100.0 * numCores
+            return usage.coerceIn(0.0, 100.0)
         } catch (e: Exception) {
             e.printStackTrace()
             return 0.0
@@ -91,12 +92,33 @@ class MainActivity: FlutterActivity() {
         return temp / 10.0 // It's in tenths of a degree Celsius
     }
 
+    private var lastRxBytes = 0L
+    private var lastTxBytes = 0L
+    private var lastNetUptime = 0L
+
     private fun getNetworkStats(): Map<String, Any> {
         val rxBytes = TrafficStats.getTotalRxBytes()
         val txBytes = TrafficStats.getTotalTxBytes()
+        val uptime = android.os.SystemClock.uptimeMillis()
+        
+        val diffRx = rxBytes - lastRxBytes
+        val diffTx = txBytes - lastTxBytes
+        val diffTime = uptime - lastNetUptime
+        
+        lastRxBytes = rxBytes
+        lastTxBytes = txBytes
+        lastNetUptime = uptime
+        
+        if (diffTime <= 0 || diffTime == uptime) {
+            return mapOf("rx_bytes" to 0L, "tx_bytes" to 0L)
+        }
+        
+        val rxBps = (diffRx * 1000) / diffTime
+        val txBps = (diffTx * 1000) / diffTime
+        
         return mapOf(
-            "rx_bytes" to rxBytes,
-            "tx_bytes" to txBytes
+            "rx_bytes" to rxBps,
+            "tx_bytes" to txBps
         )
     }
 
