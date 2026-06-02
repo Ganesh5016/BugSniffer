@@ -59,10 +59,14 @@ class MainActivity: FlutterActivity() {
             val diffTicks = totalTicks - lastTotalTicks
             val diffUptime = uptimeMillis - lastIdleTicks
             
+            if (diffUptime <= 0 || lastIdleTicks == 0L) {
+                lastTotalTicks = totalTicks
+                lastIdleTicks = uptimeMillis
+                return 0.0
+            }
+            
             lastTotalTicks = totalTicks
             lastIdleTicks = uptimeMillis
-            
-            if (diffUptime <= 0 || lastIdleTicks == uptimeMillis) return 0.0
             
             // CPU usage % = (diffTicks * 10ms per tick) / diffUptime * 100 * num_cores
             val numCores = Runtime.getRuntime().availableProcessors()
