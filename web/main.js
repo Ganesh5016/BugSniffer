@@ -32,15 +32,18 @@ async function getHeaders() {
   return headers;
 }
 
-async function apiGet(endpoint) {
-  try {
-    const res = await fetch(`${API_BASE}${endpoint}`, { headers: await getHeaders(), signal: AbortSignal.timeout(15000) });
-    if (!res.ok) throw new Error(res.statusText);
-    return await res.json();
-  } catch (e) {
-    console.error(`GET ${endpoint} failed:`, e);
-    return null;
+async function apiGet(endpoint, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, { headers: await getHeaders(), signal: AbortSignal.timeout(20000) });
+      if (!res.ok) throw new Error(res.statusText);
+      return await res.json();
+    } catch (e) {
+      console.error(`GET ${endpoint} attempt ${i + 1} failed:`, e);
+      if (i < retries) await new Promise(r => setTimeout(r, 2000));
+    }
   }
+  return null;
 }
 
 async function apiPost(endpoint, body) {
@@ -49,7 +52,7 @@ async function apiPost(endpoint, body) {
       method: 'POST',
       headers: await getHeaders(),
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) throw new Error(res.statusText);
     return await res.json();
@@ -176,8 +179,8 @@ function stopPolling() {
 async function loadDashboard() {
   const [overview, threatsData, metrics] = await Promise.all([
     apiGet('/api/dashboard/overview'),
-    apiGet('/api/threats/recent'),
-    apiGet('/api/dashboard/realtime'),
+    apiGet('/api/threats/recent-threats'),
+    apiGet('/api/dashboard/realtime-metrics'),
   ]);
 
   if (overview) {
@@ -249,14 +252,14 @@ function updateMetric(key, val, suffix) {
 // ============================================
 async function loadThreats() {
   const [recent, stats] = await Promise.all([
-    apiGet('/api/threats/recent?limit=50'),
+    apiGet('/api/threats/recent-threats?limit=50'),
     apiGet('/api/threats/threat-stats'),
   ]);
 
   if (recent) renderThreats('#threat-history', recent.threats || []);
   if (stats) {
-    $('#stat-blocked').textContent = stats.blocked_today || 0;
-    $('#stat-active').textContent = stats.active_threats || 0;
+    $('#stat-blocked').textContent = stats.threats_blocked || 0;
+    $('#stat-active').textContent = stats.malware_detected || 0;
     $('#stat-scans').textContent = stats.total_scans || 0;
   }
 }
