@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/native_service.dart';
 import '../widgets/cyber_card.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -25,13 +26,51 @@ class _ScannerScreenState extends State<ScannerScreen> {
     setState(() { _history = data['history'] ?? []; _loading = false; });
   }
 
+  String _scanStatus = 'Tap to scan all installed apps';
+  double _scanProgress = 0.0;
+
   Future<void> _quickScan() async {
-    setState(() => _scanning = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _scanning = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✅ Scan complete — 1 threat found'), backgroundColor: Color(0xFF111827), behavior: SnackBarBehavior.floating),
-    );
+    setState(() { _scanning = true; _scanStatus = 'Fetching installed apps...'; _scanProgress = 0.0; _history.clear(); });
+    
+    final apps = await NativeService.getInstalledApps();
+    if (apps.isEmpty) {
+      setState(() { _scanning = false; _scanStatus = 'No apps found.'; });
+      return;
+    }
+
+    int threatsFound = 0;
+    
+    for (int i = 0; i < apps.length; i++) {
+      final app = apps[i];
+      final name = app['name'] ?? 'Unknown';
+      final pkg = app['package'] ?? '';
+      final List<String> perms = List<String>.from(app['permissions'] ?? []);
+      
+      if (!mounted) return;
+      setState(() {
+        _scanStatus = 'Scanning $name... (${i + 1}/${apps.length})';
+        _scanProgress = (i + 1) / apps.length;
+      });
+      
+      try {
+        final result = await ApiService.scanApp(pkg, name, perms);
+        if ((result['threat_score'] ?? 0) > 0 || (result['is_malicious'] == true)) {
+          setState(() {
+            _history.insert(0, result);
+          });
+          if ((result['threat_score'] ?? 0) > 60) threatsFound++;
+        }
+      } catch (e) {
+        // Skip on error
+      }
+    }
+    
+    setState(() { _scanning = false; _scanStatus = 'Tap to scan all installed apps'; });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(threatsFound > 0 ? '⚠️ Scan complete — $threatsFound threats found' : '✅ Scan complete — No threats found'), backgroundColor: const Color(0xFF111827), behavior: SnackBarBehavior.floating),
+      );
+    }
   }
 
   Color _riskColor(String risk) {
@@ -75,8 +114,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       children: [
                         Text(_scanning ? 'SCANNING...' : 'QUICK SCAN',
                           style: const TextStyle(fontFamily: 'Orbitron', fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF00D4FF), letterSpacing: 1.5)),
-                        Text(_scanning ? 'Analyzing all installed apps...' : 'Tap to scan all installed apps',
+                        Text(_scanStatus,
                           style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                        if (_scanning) ...[
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(value: _scanProgress, backgroundColor: const Color(0xFF1E3A5F).withOpacity(0.4), valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00D4FF))),
+                        ]
                       ],
                     ),
                   ),
@@ -187,8 +230,8 @@ class _NetworkScreenState extends State<NetworkScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final data = await ApiService.getActiveConnections();
-    setState(() { _connections = data['connections'] ?? []; _loading = false; });
+    final data = await NativeService.getActiveConnections();
+    setState(() { _connections = data; _loading = false; });
   }
 
   Future<void> _checkIP() async {
@@ -298,13 +341,13 @@ class _NetworkScreenState extends State<NetworkScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(c['remote_ip'] ?? '', style: const TextStyle(fontFamily: 'Courier', fontSize: 12, color: Color(0xFF00D4FF), fontWeight: FontWeight.w600)),
-                          Text('${c['service']} · ${c['country']}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          Text('Port: ${c['remote_port']} · ${c['state']}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
                         ],
                       ),
                     ),
                     Text(
-                      suspicious ? 'RISK: $riskScore' : 'SAFE',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: suspicious ? const Color(0xFFFF4444) : const Color(0xFF00FF88)),
+                      'ACTIVE',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF00FF88)),
                     ),
                   ],
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/api_service.dart';
+import '../services/native_service.dart';
 import 'package:battery_plus/battery_plus.dart';
 import '../widgets/cyber_card.dart';
 import '../widgets/threat_item_widget.dart';
@@ -42,10 +43,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final results = await Future.wait([
       ApiService.getDashboardOverview(),
       ApiService.getRecentThreats(),
-      ApiService.getRealtimeMetrics(),
+      NativeService.getHardwareMetrics(),
+      NativeService.getNetworkStats(),
     ]);
     
-    Map<String, dynamic> metricsData = results[2];
+    Map<String, dynamic> hw = results[2];
+    Map<String, dynamic> net = results[3];
+    
+    Map<String, dynamic> metricsData = {
+      'cpu': hw['cpu'] ?? 0.0,
+      'memory': hw['memory'] ?? 0.0,
+      'temperature': hw['temperature'] ?? 0.0,
+      'network_in': net['rx_bytes'] ?? 0,
+      'network_out': net['tx_bytes'] ?? 0,
+    };
+    
     try {
       final battery = Battery();
       metricsData['battery'] = await battery.batteryLevel;
@@ -60,11 +72,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _updateMetrics() async {
-    final m = await ApiService.getRealtimeMetrics();
+    final hw = await NativeService.getHardwareMetrics();
+    final net = await NativeService.getNetworkStats();
+    
+    Map<String, dynamic> m = {
+      'cpu': hw['cpu'] ?? 0.0,
+      'memory': hw['memory'] ?? 0.0,
+      'temperature': hw['temperature'] ?? 0.0,
+      'network_in': net['rx_bytes'] ?? 0,
+      'network_out': net['tx_bytes'] ?? 0,
+    };
+    
     try {
       final battery = Battery();
       m['battery'] = await battery.batteryLevel;
     } catch (_) {}
+    
     if (mounted) setState(() => _metrics = m);
   }
 

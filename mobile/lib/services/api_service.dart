@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:battery_plus/battery_plus.dart';
+import 'native_service.dart';
 
 class ApiService {
   static const String baseUrl = 'https://bugsniffer-lxxx.onrender.com';
@@ -59,17 +60,20 @@ class ApiService {
       final battery = Battery();
       final batteryLevel = await battery.batteryLevel;
       
-      // Send 0 for hardware metrics that require native code,
-      // ensuring no fake/simulated data is ever shown.
-      double memoryUsage = 0.0;
-      double cpuUsage = 0.0;
+      final hardware = await NativeService.getHardwareMetrics();
+      final connections = await NativeService.getActiveConnections();
+      
+      double memoryUsage = (hardware['memory'] as num?)?.toDouble() ?? 0.0;
+      double cpuUsage = (hardware['cpu'] as num?)?.toDouble() ?? 0.0;
+      double temp = (hardware['temperature'] as num?)?.toDouble() ?? 0.0;
+      int activeConnections = connections.length;
       
       await _post('/api/dashboard/telemetry', {
         'battery': batteryLevel,
         'cpu': cpuUsage,
         'memory': memoryUsage,
-        'temperature': 0.0,
-        'active_connections': 0,
+        'temperature': temp,
+        'active_connections': activeConnections,
         'wifi_secure': true,
       });
     } catch (e) {
@@ -102,6 +106,14 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getScanHistory() =>
       _get('/api/scanner/scan-history');
+
+  static Future<Map<String, dynamic>> scanApp(String packageName, String appName, List<String> permissions) async {
+    return _post('/api/scanner/scan-app', {
+      'package_name': packageName,
+      'app_name': appName,
+      'permissions': permissions,
+    });
+  }
 
   static Future<Map<String, dynamic>> getPrivacyStatus() =>
       _get('/api/privacy/status');
