@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BugSniffer — AI Cybersecurity Dashboard</title>
+  <meta name="description" content="BugSniffer is an AI-powered cybersecurity platform for real-time threat detection, network monitoring, and device health analysis." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" class="screen active">
+    <div class="login-container">
+      <div class="login-glow"></div>
+      <div class="login-card">
+        <div class="login-logo">
+          <div class="shield-icon">🛡️</div>
+          <h1 class="brand-title">BUGSNIFFER</h1>
+          <p class="brand-subtitle">AI-Powered Cybersecurity Platform</p>
+        </div>
+        <form id="login-form">
+          <div class="input-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" placeholder="you@example.com" required autocomplete="email" />
+          </div>
+          <div class="input-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+          <button type="submit" id="login-btn" class="btn-primary">
+            <span class="btn-text">Sign In</span>
+            <span class="btn-loader hidden">⏳</span>
+          </button>
+          <p id="login-error" class="error-text hidden"></p>
+        </form>
+        <div class="login-divider"><span>or</span></div>
+        <button id="signup-btn" class="btn-secondary">Create Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNUP SCREEN -->
+  <div id="signup-screen" class="screen">
+    <div class="login-container">
+      <div class="login-glow"></div>
+      <div class="login-card">
+        <div class="login-logo">
+          <div class="shield-icon">🛡️</div>
+          <h1 class="brand-title">CREATE ACCOUNT</h1>
+          <p class="brand-subtitle">Join BugSniffer Security</p>
+        </div>
+        <form id="signup-form">
+          <div class="input-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" placeholder="you@example.com" required autocomplete="email" />
+          </div>
+          <div class="input-group">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" placeholder="••••••••" required autocomplete="new-password" />
+          </div>
+          <button type="submit" id="signup-submit-btn" class="btn-primary">
+            <span class="btn-text">Create Account</span>
+            <span class="btn-loader hidden">⏳</span>
+          </button>
+          <p id="signup-error" class="error-text hidden"></p>
+        </form>
+        <button id="back-to-login" class="btn-secondary">Back to Sign In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app-screen" class="screen">
+    <!-- Sidebar -->
+    <nav id="sidebar">
+      <div class="sidebar-brand">
+        <span class="shield-sm">🛡️</span>
+        <span class="brand-sm">BUGSNIFFER</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#" class="nav-link active" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</a></li>
+        <li><a href="#" class="nav-link" data-page="threats"><span class="nav-icon">⚠️</span> Threats</a></li>
+        <li><a href="#" class="nav-link" data-page="scanner"><span class="nav-icon">🔍</span> Scanner</a></li>
+        <li><a href="#" class="nav-link" data-page="network"><span class="nav-icon">📡</span> Network</a></li>
+        <li><a href="#" class="nav-link" data-page="privacy"><span class="nav-icon">🔒</span> Privacy</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <span class="user-email" id="user-email">user@email.com</span>
+        </div>
+        <button id="logout-btn" class="btn-logout">Logout</button>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content">
+      <!-- Top Bar -->
+      <header id="topbar">
+        <div class="topbar-left">
+          <button id="mobile-menu-btn" class="mobile-menu">☰</button>
+          <h2 id="page-title">Dashboard</h2>
+        </div>
+        <div class="topbar-right">
+          <div class="live-badge"><span class="live-dot"></span> LIVE</div>
+        </div>
+      </header>
+
+      <!-- Page Container -->
+      <div id="page-container">
+
+        <!-- DASHBOARD PAGE -->
+        <section id="page-dashboard" class="page active">
+          <div class="metrics-grid">
+            <div class="metric-card" id="metric-cpu">
+              <div class="metric-icon">⚙️</div>
+              <div class="metric-value" id="val-cpu">0.0%</div>
+              <div class="metric-label">CPU</div>
+            </div>
+            <div class="metric-card" id="metric-ram">
+              <div class="metric-icon">💾</div>
+              <div class="metric-value" id="val-ram">0.0%</div>
+              <div class="metric-label">RAM</div>
+            </div>
+            <div class="metric-card" id="metric-battery">
+              <div class="metric-icon">🔋</div>
+              <div class="metric-value" id="val-battery">0%</div>
+              <div class="metric-label">BATTERY</div>
+            </div>
+            <div class="metric-card" id="metric-temp">
+              <div class="metric-icon">🌡️</div>
+              <div class="metric-value" id="val-temp">0°C</div>
+              <div class="metric-label">TEMP</div>
+            </div>
+          </div>
+
+          <!-- Security Score -->
+          <div class="cards-row">
+            <div class="cyber-card security-score-card">
+              <h3 class="card-title">SECURITY SCORE</h3>
+              <div class="score-ring">
+                <svg viewBox="0 0 120 120" class="score-svg">
+                  <circle cx="60" cy="60" r="52" class="score-bg" />
+                  <circle cx="60" cy="60" r="52" class="score-fill" id="score-ring-fill" />
+                </svg>
+                <div class="score-text" id="security-score">100</div>
+              </div>
+              <div class="score-status" id="threat-status">Protected</div>
+            </div>
+
+            <div class="cyber-card resource-card">
+              <h3 class="card-title">RESOURCE USAGE</h3>
+              <div class="resource-bars">
+                <div class="resource-row">
+                  <span class="res-label">CPU Usage</span>
+                  <div class="res-bar"><div class="res-fill cyan" id="bar-cpu" style="width:0%"></div></div>
+                  <span class="res-pct" id="pct-cpu">0.0%</span>
+                </div>
+                <div class="resource-row">
+                  <span class="res-label">Memory</span>
+                  <div class="res-bar"><div class="res-fill gold" id="bar-ram" style="width:0%"></div></div>
+                  <span class="res-pct" id="pct-ram">0.0%</span>
+                </div>
+                <div class="resource-row">
+                  <span class="res-label">Battery</span>
+                  <div class="res-bar"><div class="res-fill green" id="bar-battery" style="width:0%"></div></div>
+                  <span class="res-pct" id="pct-battery">0%</span>
+                </div>
+                <div class="resource-row">
+                  <span class="res-label">Temperature</span>
+                  <div class="res-bar"><div class="res-fill orange" id="bar-temp" style="width:0%"></div></div>
+                  <span class="res-pct" id="pct-temp">0°C</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Network + Threats Row -->
+          <div class="cards-row">
+            <div class="cyber-card network-card">
+              <h3 class="card-title">NETWORK</h3>
+              <div class="net-stats">
+                <div class="net-row"><span class="net-label">↓ Download</span><span class="net-val cyan" id="net-down">0.0 KB/s</span></div>
+                <div class="net-row"><span class="net-label">↑ Upload</span><span class="net-val green" id="net-up">0.0 KB/s</span></div>
+                <div class="net-row"><span class="net-label">Connections</span><span class="net-val white" id="net-conn">0</span></div>
+                <div class="net-row"><span class="net-label">Suspicious</span><span class="net-val red" id="net-sus">0</span></div>
+              </div>
+              <div class="wifi-badge" id="wifi-badge">
+                <span class="wifi-icon">📶</span>
+                <span>SECURE</span>
+              </div>
+            </div>
+
+            <div class="cyber-card threats-card">
+              <h3 class="card-title">RECENT THREATS</h3>
+              <div id="threats-list" class="threats-list">
+                <div class="empty-state">✅ No threats detected</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- THREATS PAGE -->
+        <section id="page-threats" class="page">
+          <div class="cyber-card">
+            <h3 class="card-title">THREAT HISTORY</h3>
+            <div id="threat-history" class="threats-list">
+              <div class="loading-spinner">Loading...</div>
+            </div>
+          </div>
+          <div class="cards-row" style="margin-top:16px">
+            <div class="cyber-card stat-mini">
+              <div class="stat-val" id="stat-blocked">0</div>
+              <div class="stat-label">Blocked Today</div>
+            </div>
+            <div class="cyber-card stat-mini">
+              <div class="stat-val red" id="stat-active">0</div>
+              <div class="stat-label">Active Threats</div>
+            </div>
+            <div class="cyber-card stat-mini">
+              <div class="stat-val green" id="stat-scans">0</div>
+              <div class="stat-label">Total Scans</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCANNER PAGE -->
+        <section id="page-scanner" class="page">
+          <div class="cyber-card scanner-card">
+            <h3 class="card-title">APP SCANNER</h3>
+            <p class="card-desc">View scan results from your connected mobile device.</p>
+            <button id="refresh-scans-btn" class="btn-primary scan-btn">🔄 Refresh Scan History</button>
+          </div>
+          <div class="cyber-card" style="margin-top:16px">
+            <h3 class="card-title">SCAN HISTORY</h3>
+            <div id="scan-history" class="scan-list">
+              <div class="loading-spinner">Loading...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- NETWORK PAGE -->
+        <section id="page-network" class="page">
+          <div class="cyber-card">
+            <h3 class="card-title">NETWORK CONNECTIONS</h3>
+            <p class="card-desc">Active connections reported by your mobile device.</p>
+            <div class="ip-check-row">
+              <input type="text" id="ip-input" placeholder="Enter IP to check..." class="ip-input" />
+              <button id="check-ip-btn" class="btn-primary">Check IP</button>
+            </div>
+            <div id="ip-result" class="ip-result hidden"></div>
+          </div>
+          <div class="cyber-card" style="margin-top:16px">
+            <h3 class="card-title">ACTIVE CONNECTIONS</h3>
+            <div id="connections-list" class="connections-list">
+              <div class="loading-spinner">Loading...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRIVACY PAGE -->
+        <section id="page-privacy" class="page">
+          <div class="cyber-card">
+            <h3 class="card-title">PRIVACY STATUS</h3>
+            <div id="privacy-content" class="privacy-grid">
+              <div class="loading-spinner">Loading...</div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
